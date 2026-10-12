@@ -164,6 +164,7 @@ dialog h3{margin:0 0 8px;font-size:16px}
  .card{padding:12px}
  main{padding:10px}
 }
+.lgErr{color:var(--bad);font-size:13px;margin:6px 0;min-height:1em}.lgshow{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--mute);margin-top:6px}.lgshow input{width:auto}
 .lgrow{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap}.lgrow .f{flex:1;min-width:200px}
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#222;color:#fff;padding:8px 16px;border-radius:20px;font-size:13px;opacity:0;transition:.2s;pointer-events:none}
 .toast.on{opacity:1}
@@ -193,6 +194,7 @@ dialog h3{margin:0 0 8px;font-size:16px}
  <h1>工作日報表 <small>兆聯實業股份有限公司 ・ 自動儲存到雲端</small></h1>
  <span class="status" id="status"></span>
  <div class="bar">
+  <a id="mgrLink" href="manager.html" hidden style="text-decoration:none;border:1px solid var(--pri);color:var(--pri);border-radius:6px;padding:6px 12px">主管檢視</a>
   <button id="btnCopy">複製文字</button>
   <button id="btnJson">匯出檔案</button>
   <button id="btnImport">匯入</button>
@@ -733,7 +735,7 @@ function nasBar(){
  if(!sb){msg.innerHTML=`⚠ ${esc(nas.err||'尚未設定雲端連線')}`;msg.style.color='var(--bad)';return}
  if(!nas.ok){
   let saved='';try{saved=localStorage.getItem('dr:lastEmail')||''}catch(e){}
-  msg.innerHTML=`<div class="lgrow"><label class="f">Email<input id="lgEmail" type="email" inputmode="email" autocomplete="username" placeholder="your@company.com" value="${esc(login.email||saved)}"></label><label class="f">密碼<input id="lgPwd" type="password" autocomplete="current-password"></label><button type="button" class="pri" id="lgLogin">登入</button></div><div class="note">帳號與初始密碼由管理員提供；登入後可自行變更密碼，忘記密碼請聯絡管理員重設。</div>`;
+  msg.innerHTML=`<div class="lgrow"><label class="f">Email<input id="lgEmail" type="email" inputmode="email" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="your@company.com" value="${esc(login.email||saved)}"></label><label class="f">密碼<input id="lgPwd" type="password" autocomplete="current-password" autocapitalize="none" autocorrect="off" spellcheck="false"></label><button type="button" class="pri" id="lgLogin">登入</button></div><label class="lgshow"><input type="checkbox" id="lgShow">顯示密碼</label><div id="lgErr" class="lgErr"></div><div class="note">帳號與初始密碼由管理員提供；登入後可自行變更密碼，忘記密碼請聯絡管理員重設。</div>`;
   return;
  }
  if(!nas.prof){msg.innerHTML=`⚠ ${esc(nas.err||'讀取人員資料失敗')}<div class="note">登入帳號：${esc(nas.session&&nas.session.user.email||'')}</div>`;msg.style.color='var(--bad)';btn('登出',signOut);return}
@@ -741,20 +743,28 @@ function nasBar(){
  btn('立即儲存',()=>flushNas(true),'pri');btn('變更密碼',openPwd);btn('登出',signOut);
 }
 let loginBusy=false;
+const lgErr=t=>{const el=$('#lgErr');if(el)el.textContent=t||''};
 async function doLogin(){
  if(loginBusy)return;
  const email=(($('#lgEmail')||{}).value||'').trim().toLowerCase(),password=($('#lgPwd')||{}).value||'';
- if(!/^\S+@\S+\.\S+$/.test(email)){toast('請輸入正確的 Email');return}
- if(!password){toast('請輸入密碼');return}
- login.email=email;loginBusy=true;toast('登入中…');
- const{error}=await sb.auth.signInWithPassword({email,password});
- loginBusy=false;
- if(error){toast(/invalid login/i.test(error.message)?'帳號或密碼不正確':'登入失敗：'+error.message);return}
- try{localStorage.setItem('dr:lastEmail',email)}catch(e){}   // 成功時由 onAuthStateChange 接手
-}
-async function signOut(){await sb.auth.signOut()}
+ lgErr('');
+ if(!/^\S+@\S+\.\S+$/.test(email)){lgErr('請輸入正確的 Email');return}
+ if(!password){lgErr('請輸入密碼');return}
+ login.email=email;loginBusy=true;
+ const btn=$('#lgLogin');if(btn){btn.disabled=true;btn.textContent='登入中…'}
+ try{
+  const{error}=await sb.auth.signInWithPassword({email,password});
+  if(error){lgErr(/invalid login/i.test(error.message)?'帳號或密碼不正確（請確認 Email 與密碼；可勾選「顯示密碼」檢查）':'登入失敗：'+error.message);return}
+  try{localStorage.setItem('dr:lastEmail',email)}catch(e){}   // 成功時由 onAuthStateChange 接手
+ }catch(e){
+  lgErr('連線失敗：'+(e&&e.message||e)+'（請確認網路後再試）');
+ }finally{
+  loginBusy=false;const b2=$('#lgLogin');if(b2){b2.disabled=false;b2.textContent='登入'}
+ }
+}async function signOut(){await sb.auth.signOut()}
 function openPwd(){$('#pw1').value='';$('#pw2').value='';$('#pwDlg').showModal()}
 document.addEventListener('click',async e=>{
+ if(e.target.id==='lgShow'){const p=$('#lgPwd');if(p)p.type=e.target.checked?'text':'password';return}
  if(e.target.closest('#lgLogin'))doLogin();
  else if(e.target.closest('#pwCancel'))$('#pwDlg').close();
  else if(e.target.closest('#pwOk')){
@@ -784,6 +794,7 @@ async function applyConnection(){
  }
  $('#dept').value=nas.prof?.dept||'';$('#emp').value=nas.prof?.emp||'';$('#name').value=nas.prof?.name||'';
  $('#form').classList.toggle('locked',!nas.prof);
+ $('#mgrLink').hidden=!(nas.prof&&['manager','admin'].includes(nas.prof.role));
  ['btnCopy','btnJson','btnImport','btnPrint'].forEach(id=>$('#'+id).disabled=!nas.prof);
  nasBar();
  filled={};leaves={};loadedMonths.clear();for(const k in otDay)delete otDay[k];extraHol={};extraWork=new Set();

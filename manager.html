@@ -1,0 +1,379 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>日報檢視（主管）</title>
+<style>
+:root{--bg:#f4f6f9;--card:#fff;--ink:#1c2430;--mute:#6b7685;--line:#dde2ea;--pri:#1f5fbf;--ok:#1b8a4b;--bad:#c0392b}
+@media (prefers-color-scheme:dark){:root{--bg:#12161c;--card:#1b222b;--ink:#e6eaf0;--mute:#97a3b3;--line:#2c3643;--pri:#5b9bf0}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 "Microsoft JhengHei","PingFang TC",system-ui,sans-serif}
+header.top{position:sticky;top:0;z-index:6;background:var(--card);border-bottom:1px solid var(--line);padding:10px 16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+header.top h1{font-size:17px;margin:0;flex:1;min-width:180px}header.top h1 small{display:block;font-weight:400;color:var(--mute);font-size:12px}
+main{max-width:1400px;margin:0 auto;padding:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:12px}
+.card h2{font-size:15px;margin:0 0 8px}
+button,a.btn{font:inherit;cursor:pointer;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:6px;padding:5px 12px;text-decoration:none;display:inline-block}
+button:hover,a.btn:hover{border-color:var(--pri)}button.pri{background:var(--pri);border-color:var(--pri);color:#fff}
+input,select{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:5px 8px}
+.bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.sp{flex:1}
+.lgrow{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap}.lgrow label{display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--mute);flex:1;min-width:200px}.lgrow input{width:100%}
+.note{font-size:12px;color:var(--mute)}.err{color:var(--bad);font-size:13px;margin:6px 0}
+/* 矩陣 */
+.tblwrap{overflow:auto;max-height:72vh;border:1px solid var(--line);border-radius:8px}
+table.mx{border-collapse:separate;border-spacing:0;font-size:12px;min-width:100%}
+table.mx th,table.mx td{border-bottom:1px solid var(--line);border-right:1px solid var(--line);padding:0;text-align:center;white-space:nowrap}
+table.mx thead th{position:sticky;top:0;background:var(--card);z-index:3;padding:3px 0;font-weight:600}
+table.mx thead th small{display:block;font-weight:400;color:var(--mute);font-size:10px}
+table.mx th.we,table.mx th.off{color:var(--mute)}
+table.mx .nm{position:sticky;left:0;background:var(--card);z-index:2;text-align:left;padding:3px 8px;min-width:116px;font-weight:600}
+table.mx thead .nm{z-index:4}
+table.mx .nm small{font-weight:400;color:var(--mute);margin-left:4px}
+table.mx td.c{width:26px;min-width:26px;height:28px;cursor:pointer;font-size:11px}
+table.mx td.sum{padding:0 8px;min-width:46px}
+.st-done{background:#d9f2e3;color:#14532d}.st-leave{background:#e9defc;color:#3b1f78}.st-late{background:#fbd5d0;color:#7a1c12;font-weight:700}
+.st-pend{background:#fff0c9;color:#6b4a00}.st-ot{background:#dbe9fb;color:#133c78}.st-off{background:repeating-linear-gradient(45deg,transparent 0 4px,rgba(0,0,0,.04) 4px 8px);color:var(--mute)}
+.st-na,.st-future{color:var(--mute)}
+@media (prefers-color-scheme:dark){.st-done{background:#1d4430;color:#cdeedb}.st-leave{background:#352a58;color:#e3d9ff}.st-late{background:#561f1a;color:#ffd6d1}.st-pend{background:#4a3a10;color:#ffe8a8}.st-ot{background:#1c3556;color:#cfe2fb}}
+.lv0{color:var(--ok)}.lv1{background:#fff0c9;color:#6b4a00}.lv2{background:#ffd9a8;color:#6b3300}.lv3{background:#fbd5d0;color:#7a1c12}.lv4{background:#7a1c4d;color:#fff}
+.legend{display:flex;gap:12px;flex-wrap:wrap;margin-top:8px;font-size:12px;color:var(--mute)}.legend i{display:inline-block;width:14px;height:14px;border-radius:3px;margin-right:4px;vertical-align:-3px;text-align:center;font-style:normal;font-size:10px;line-height:14px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0}.chip{border-radius:12px;padding:1px 10px;font-size:12px;border:1px solid var(--line);cursor:pointer}
+/* 明細視窗 */
+dialog{border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--ink);padding:16px 18px;width:min(720px,95vw);max-height:90vh}
+dialog::backdrop{background:rgba(0,0,0,.45)}
+dialog h3{margin:0 0 6px;font-size:16px}
+.kv{display:grid;grid-template-columns:90px 1fr;gap:4px 10px;margin:8px 0;font-size:13px}.kv b{color:var(--mute);font-weight:400}
+.it{border:1px solid var(--line);border-radius:8px;overflow:hidden;margin:6px 0}.it div{display:flex;gap:10px;padding:5px 10px;border-bottom:1px solid var(--line);font-size:13px}.it div:last-child{border-bottom:0}.it div span:first-child{flex:1}
+.sec{margin:8px 0}.sec b{display:block;font-size:12px;color:var(--mute);margin-bottom:2px}.sec pre{margin:0;white-space:pre-wrap;font:inherit;background:var(--bg);border-radius:6px;padding:6px 10px}
+.mute{color:var(--mute)}
+</style>
+</head>
+<body>
+<header class="top">
+ <h1>日報檢視（主管）<small id="who">兆聯實業股份有限公司</small></h1>
+ <div class="bar"><a class="btn" href="index.html">← 回到我的日報</a><button id="btnOut" hidden>登出</button></div>
+</header>
+<main>
+ <section class="card" id="loginCard" hidden>
+  <h2>登入</h2>
+  <div class="lgrow"><label>Email<input id="lgEmail" type="email" inputmode="email" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false"></label>
+  <label>密碼<input id="lgPwd" type="password" autocomplete="current-password" autocapitalize="none" autocorrect="off"></label>
+  <button class="pri" id="lgBtn">登入</button></div>
+  <div class="err" id="lgErr"></div>
+ </section>
+ <section class="card" id="msgCard" hidden></section>
+
+ <div id="app" hidden>
+  <section class="card">
+   <div class="bar">
+    <button id="pPrev">‹</button><b id="pTitle" style="min-width:150px;text-align:center"></b><button id="pNext">›</button>
+    <button id="pNow">目前這一期</button>
+    <span class="sp"></span>
+    <input id="q" placeholder="搜尋姓名 / 編號" style="width:150px">
+    <select id="sortBy"><option value="emp">依員工編號</option><option value="ot">依加班時數（高到低）</option><option value="late">依逾期未填（多到少）</option></select>
+    <button id="btnXls">匯出 Excel</button>
+   </div>
+   <div class="note" style="margin-top:6px">統計期間為每月 21 日～次月 20 日；顏色與加班規則與工程師端一致。點任一格可查看當天日報內容（唯讀）。</div>
+  </section>
+  <section class="card" id="alerts"></section>
+  <section class="card">
+   <div class="tblwrap"><table class="mx" id="mx"></table></div>
+   <div class="legend">
+    <span><i class="st-done">✓</i>已填</span><span><i class="st-leave">假</i>請假</span><span><i class="st-pend">·</i>待補（3 日內）</span>
+    <span><i class="st-late">✕</i>逾 3 日未填</span><span><i class="st-ot">加</i>假日出勤</span><span><i class="st-off"></i>假日</span>
+    <span>加班：<i class="lv1">46</i><i class="lv2">60</i><i class="lv3">80</i><i class="lv4">100</i> 小時以上</span>
+   </div>
+  </section>
+ </div>
+</main>
+
+<dialog id="dayDlg"><div id="dayBody"></div><div class="bar" style="justify-content:flex-end;margin-top:12px"><button id="dayClose" class="pri">關閉</button></div></dialog>
+
+<script src="config.js"></script>
+<script src="supabase.min.js"></script>
+<script src="exceljs.min.js"></script>
+<script>
+const $=s=>document.querySelector(s);
+const pad=n=>String(n).padStart(2,'0');
+const esc=s=>String(s??'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+const todayStr=()=>{const d=new Date();return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`};
+
+/* ===== 與工程師端共用的邏輯（由 組建主管頁.ps1 從 index.html 複製，確保算法一致）===== */
+const itemText=r=>{const c=(r.c||'').trim(),t=(r.t||'').trim();return c&&t?`${c}_${t}`:(c||t)};
+const hasItem=r=>!!itemText(r);
+/* 本日請假：f.leave = {type, part(全天/上午/下午), note} */
+const leaveText=f=>f&&f.leave?`本日請假（${f.leave.type}${f.leave.part&&f.leave.part!=='全天'?'・'+f.leave.part:''}）${f.leave.note&&f.leave.note.trim()?'　'+f.leave.note.trim():''}`:'';
+const leaveFull=f=>!!(f&&f.leave&&f.leave.part==='全天');
+const leaveShort=f=>f&&f.leave?`${f.leave.type}${f.leave.part&&f.leave.part!=='全天'?'('+f.leave.part+')':''}`:'';
+/* 輸出用的工項清單：請假列在最前面，後面接有填的工項 */
+const listItems=dd=>(dd.f&&dd.f.leave?[{c:'',t:leaveText(dd.f),p:'',r:''}]:[]).concat((dd.today||[]).filter(hasItem));
+/* 舊資料（整串「P…_內容」存在 t）自動拆成案號 + 內容 */
+function migrate(d){
+ const fix=r=>{if(r&&r.c===undefined){const m=String(r.t||'').match(/^\s*([A-Za-z]\d{5,}[A-Za-z0-9]*)\s*[_＿]\s*([\s\S]*)$/);r.c=m?m[1]:'';if(m)r.t=m[2]}};
+ (d.today||[]).forEach(fix);delete d.tmr;
+ const f=d.f;   // 舊版單筆欄位 → 多筆（budgets / awards / bills）
+ if(f){
+  if(!f.budgets){
+   if(f.budget_no||f.budget_t1||f.budget_t2||f.budget_why)f.budgets=[{no:f.budget_no||'',t1:!!f.budget_t1,t2:!!f.budget_t2,why:f.budget_why||''}];
+   ['budget_no','budget_t1','budget_t2','budget_why'].forEach(k=>delete f[k]);
+  }
+  if(!f.awards){
+   if(f.award_no||f.award_pr||f.award_item)f.awards=[{no:f.award_no||'',pr:f.award_pr||'',item:f.award_item||''}];
+   ['award_no','award_pr','award_item'].forEach(k=>delete f[k]);
+  }
+  if(!f.bills){
+   if(f.bill_no||f.bill_sr)f.bills=[{no:f.bill_no||'',sr:f.bill_sr||''}];
+   ['bill_no','bill_sr'].forEach(k=>delete f[k]);
+  }
+ }
+ return d;
+}
+
+/* ---------- 各欄位（預算調整…建議事項）的輸出文字；沒內容但勾了「本日無相關事項」就輸出該句 ---------- */
+const NONE='本日無相關事項';
+const newB=()=>({no:'',t1:false,t2:false,why:'',files:[]});
+const tx=v=>!!(v&&String(v).trim());
+const newA=()=>({no:'',pr:'',item:''}),newBl=()=>({no:'',sr:'',note:''});
+/* 可新增多筆的欄位：預算調整 / 專案發包 / 案件請款 */
+const MULTI={
+ budget:{k:'budgets',label:'預算調整',nw:newB,has:e=>tx(e.no)||e.t1||e.t2||tx(e.why)||!!(e.files&&e.files.length),
+  fmt:e=>`專案編號：${e.no||''}\n調整型式： ${boxC(e.t1)}總預算調整  ${boxC(e.t2)}分項調整\n原因：${e.why||''}${e.files&&e.files.length?`\n異常批註單：${e.files.map(x=>x.name).join('、')}`:''}`},
+ award:{k:'awards',label:'專案發包',nw:newA,has:e=>tx(e.no)||tx(e.pr)||tx(e.item),
+  fmt:e=>`專案編號：${e.no||''}\n請購單號：${e.pr||''}\n發包項目：${e.item||''}`},
+ bill:{k:'bills',label:'案件請款',nw:newBl,has:e=>tx(e.no)||tx(e.sr)||tx(e.note),
+  fmt:e=>`案件請款專案編號：${e.no||''}\n※上SR時間：${e.sr||''}${tx(e.note)?`\n備註：${e.note.trim()}`:''}`}
+};
+const SEC={budget:['budgets'],award:['awards'],bill:['bills'],qa:['qa'],hse:['hse'],abn:['abn'],cust:['cust','att'],sug:['sug']};
+const BLANK={budget:'專案編號：\n調整型式： □總預算調整  □分項調整\n原因：',award:'專案編號：\n請購單號：\n發包項目：',bill:'案件請款專案編號：\n※上SR時間：\n'};
+const boxC=b=>b?'■':'□';
+const custText=f=>[f.cust||'',(f.att&&f.att.length)?'附件：'+f.att.map(a=>a.name).join('、'):''].filter(Boolean).join('\n');
+const secHas=(f,k)=>MULTI[k]?(f[MULTI[k].k]||[]).some(MULTI[k].has):SEC[k].some(x=>Array.isArray(f[x])?f[x].length:(typeof f[x]==='string'?f[x].trim():f[x]));
+function secOut(f,k){
+ if(secHas(f,k)){
+  const M=MULTI[k];
+  if(M){
+   const L=f[M.k].filter(M.has);
+   return L.map((e,i)=>`${L.length>1?`【第 ${i+1} 筆】\n`:''}${M.fmt(e)}`).join('\n\n');
+  }
+  if(k==='cust')return custText(f);
+  return String(f[k]).trim();
+ }
+ return f['none_'+k]?NONE:'';
+}
+const secExport=(f,k)=>secOut(f,k)||BLANK[k]||'';
+const HOL={
+ '2026-01-01':'元旦',
+ '2026-02-14':'春節','2026-02-15':'春節','2026-02-16':'除夕','2026-02-17':'春節','2026-02-18':'春節','2026-02-19':'春節','2026-02-20':'春節','2026-02-21':'春節','2026-02-22':'春節',
+ '2026-02-27':'和平紀念日補假','2026-02-28':'和平紀念日',
+ '2026-04-03':'兒童節補假','2026-04-04':'兒童節','2026-04-05':'清明節','2026-04-06':'清明節補假',
+ '2026-05-01':'勞動節','2026-06-19':'端午節','2026-09-25':'中秋節','2026-09-28':'教師節',
+ '2026-10-09':'國慶日補假','2026-10-10':'國慶日','2026-10-25':'光復節','2026-10-26':'光復節補假','2026-12-25':'行憲紀念日'
+};
+const MAKEUP={'2026-02-07':'補班'};
+const WD='日一二三四五六';
+let filled={},leaves={},extraHol={},extraWork=new Set();
+const loadedMonths=new Set();
+const cal={y:0,m:0};
+const parseD=s=>{const[y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d)};
+const fmtD=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const isWork=s=>{if(extraWork.has(s)||MAKEUP[s])return true;if(HOL[s]||extraHol[s])return false;const w=parseD(s).getDay();return w!==0&&w!==6};
+const offName=s=>HOL[s]||extraHol[s]||'';
+const hasContent=j=>(j.today||[]).some(hasItem)||!!(j.f&&j.f.leave);
+
+const OT_START=8*60+30,OT_END=18*60,OT_BREAKS=[[12*60,13*60],[17*60+30,18*60]];
+const OT_LV=[[100,4],[80,3],[60,2],[46,1]];
+const OT_TXT={1:'已超出 46 小時',2:'已超出 60 小時',3:'已超出 80 小時',4:'已超出 100 小時'};
+const OT_RULE='08:30～12:00、13:00～17:30 為工作時間；17:30～18:00 晚休不計，18:00 後算加班';
+const otDay={};let otState=null;
+const tmin=t=>{const[h,m]=String(t).split(':').map(Number);return h*60+m};
+const fmtH=h=>{const m=Math.round(h*60);return m%60?`${Math.floor(m/60)} 小時 ${m%60} 分`:`${m/60} 小時`};
+const ovl=(a,b,x,y)=>Math.max(0,Math.min(b,y)-Math.max(a,x));
+function otHours(f,d){
+ if(!f||!f.tIn||!f.tOff||leaveFull(f))return 0;
+ const a=tmin(f.tIn),b=tmin(f.tOff);if(isNaN(a)||isNaN(b)||b<=a)return 0;
+ const min=isWork(d)
+  ?ovl(a,b,-Infinity,OT_START)+ovl(a,b,OT_END,Infinity)                       // 上班日：08:30 前 + 18:00 後
+  :(b-a)-OT_BREAKS.reduce((n,[x,y])=>n+ovl(a,b,x,y),0);                       // 假日出勤：全部時數扣掉休息時段
+ return Math.max(0,min)/60;
+}
+function otPeriod(d){
+ const[y,m,dd]=d.split('-').map(Number);let sy=y,sm=m;
+ if(dd<21){sm--;if(sm<1){sm=12;sy--}}
+ let ey=sy,em=sm+1;if(em>12){em=1;ey++}
+ return{start:`${sy}-${pad(sm)}-21`,end:`${ey}-${pad(em)}-20`,months:[[sy,sm],[ey,em]]};
+}
+
+/* ===== 以上為共用邏輯 ===== */
+
+const CFG=window.APP_CONFIG||{};
+let sb=null,me=null,people=[],period=null,byEmp={},rowsData=[];
+const show=(id,v)=>{$(id).hidden=!v};
+function msg(t,bad){const c=$('#msgCard');c.hidden=!t;c.innerHTML=t?`<span style="color:${bad?'var(--bad)':'inherit'}">${t}</span>`:''}
+
+/* ---------- 登入 / 權限 ---------- */
+async function boot(){
+ if(!CFG.url||!CFG.key||!window.supabase){msg('尚未設定雲端連線（config.js）',true);return}
+ sb=window.supabase.createClient(CFG.url,CFG.key,{auth:{persistSession:true,autoRefreshToken:true}});
+ const{data:{session}}=await sb.auth.getSession();
+ if(!session){show('#loginCard',true);show('#app',false);show('#btnOut',false);return}
+ await enter(session);
+}
+async function enter(session){
+ show('#loginCard',false);show('#btnOut',true);msg('');
+ const{data:p,error}=await sb.from('profiles').select('email,emp,name,dept,role,active').eq('email',session.user.email.toLowerCase()).maybeSingle();
+ if(error||!p){msg('讀取人員資料失敗：'+(error?esc(error.message):'此帳號尚未建立人員資料'),true);return}
+ if(!['manager','admin'].includes(p.role)){msg('此頁僅限主管 / 管理員使用。你的角色是「'+esc(p.role)+'」。<br><a class="btn" href="index.html" style="margin-top:8px">回到我的日報</a>',true);show('#app',false);return}
+ me=p;$('#who').textContent=`${p.name}（${p.role==='admin'?'管理員':'主管'}）`;
+ show('#app',true);
+ const t=todayStr().split('-').map(Number);period=periodOf(`${t[0]}-${pad(t[1])}-${pad(t[2])}`);
+ await load();
+}
+$('#lgBtn').onclick=async()=>{
+ const email=$('#lgEmail').value.trim().toLowerCase(),password=$('#lgPwd').value;$('#lgErr').textContent='';
+ if(!email||!password){$('#lgErr').textContent='請輸入 Email 與密碼';return}
+ const{data,error}=await sb.auth.signInWithPassword({email,password});
+ if(error){$('#lgErr').textContent=/invalid login/i.test(error.message)?'帳號或密碼不正確':'登入失敗：'+error.message;return}
+ await enter(data.session);
+};
+$('#btnOut').onclick=async()=>{await sb.auth.signOut();location.reload()};
+
+/* ---------- 期間（21 日～次月 20 日） ---------- */
+function periodOf(d){const p=otPeriod(d);return{start:p.start,end:p.end}}
+function shiftPeriod(p,k){let[y,m]=p.start.split('-').map(Number);m+=k;while(m<1){m+=12;y--}while(m>12){m-=12;y++}return periodOf(`${y}-${pad(m)}-25`)}
+function daysOf(p){const out=[];for(const d=parseD(p.start);fmtD(d)<=p.end;d.setDate(d.getDate()+1))out.push(fmtD(d));return out}
+$('#pPrev').onclick=()=>{period=shiftPeriod(period,-1);load()};
+$('#pNext').onclick=()=>{period=shiftPeriod(period,1);load()};
+$('#pNow').onclick=()=>{period=periodOf(todayStr());load()};
+$('#q').oninput=render;$('#sortBy').onchange=render;
+
+/* ---------- 讀取資料（分頁，避免超過 1000 筆上限） ---------- */
+async function load(){
+ msg('讀取中…');
+ try{
+  const{data:ps,error:e1}=await sb.from('profiles').select('emp,name,dept,role,start_date,active').eq('active',true).order('emp');
+  if(e1)throw e1;people=ps||[];
+  const all=[];
+  for(let from=0;;from+=1000){
+   const{data:rows,error}=await sb.from('reports').select('emp,date,data').gte('date',period.start).lte('date',period.end).order('date').order('emp').range(from,from+999);
+   if(error)throw error;
+   all.push(...(rows||[]));if(!rows||rows.length<1000)break;
+  }
+  byEmp={};for(const r of all){(byEmp[r.emp]=byEmp[r.emp]||{})[r.date]=migrate(Object.assign({today:[],f:{}},r.data||{}))}
+  msg('');
+ }catch(e){msg('讀取失敗：'+esc(e.message),true);return}
+ compute();render();
+}
+
+/* ---------- 計算每人每天狀態 ---------- */
+const DAYS=864e5;
+function compute(){
+ const days=daysOf(period),today=todayStr(),t0=parseD(today);
+ rowsData=people.map(p=>{
+  const rec=byEmp[p.emp]||{};
+  const firstFilled=days.find(d=>rec[d]&&hasContent(rec[d]));
+  const start=p.start_date||firstFilled||null;           // 起算日：指定日 > 本期第一筆有填的日期
+  let ot=0,done=0,late=0,pend=0,leave=0;
+  const cells=days.map(d=>{
+   const r=rec[d],has=!!(r&&hasContent(r)),w=isWork(d);
+   if(has){const h=otHours(r.f,d);ot+=h;
+    if(r.f&&r.f.leave){leave+=r.f.leave.part==='全天'?1:.5;if(w)done+= r.f.leave.part==='全天'?0:1;return{d,st:'leave',h}}
+    if(!w)return{d,st:'ot',h};
+    done++;return{d,st:'done',h}}
+   if(!w)return{d,st:'off',h:0};
+   if(start==null||d<start)return{d,st:'na',h:0};
+   if(d>=today)return{d,st:'future',h:0};
+   const age=Math.round((t0-parseD(d))/DAYS);
+   if(age>3){late++;return{d,st:'late',h:0}}
+   pend++;return{d,st:'pend',h:0};
+  });
+  return{p,cells,ot,done,late,pend,leave,start};
+ });
+}
+const lvOf=h=>(OT_LV.find(([t])=>h>t)||[0,0])[1];
+const SYM={done:'✓',leave:'假',late:'✕',pend:'·',ot:'加',off:'',na:'–',future:''};
+
+/* ---------- 畫面 ---------- */
+function render(){
+ if(!rowsData.length&&!people.length)return;
+ const s=x=>`${+x.slice(5,7)}/${+x.slice(8)}`;
+ $('#pTitle').textContent=`${s(period.start)} ～ ${s(period.end)}`;
+ const q=$('#q').value.trim().toLowerCase(),sort=$('#sortBy').value;
+ let L=rowsData.filter(r=>!q||r.p.name.toLowerCase().includes(q)||r.p.emp.toLowerCase().includes(q));
+ if(sort==='ot')L=[...L].sort((a,b)=>b.ot-a.ot);else if(sort==='late')L=[...L].sort((a,b)=>b.late-a.late||b.pend-a.pend);
+ // 警示
+ const over=rowsData.filter(r=>lvOf(r.ot)>0).sort((a,b)=>b.ot-a.ot),lates=rowsData.filter(r=>r.late>0).sort((a,b)=>b.late-a.late);
+ const chip=(r,txt,cls)=>`<span class="chip ${cls||''}" data-emp="${esc(r.p.emp)}">${esc(r.p.name)}　${txt}</span>`;
+ $('#alerts').innerHTML=`<h2>🔔 需要注意</h2>`+
+  (over.length||lates.length?
+   `${over.length?`<div class="note">加班時數超出 46 小時（本期）</div><div class="chips">${over.map(r=>chip(r,Math.round(r.ot*10)/10+' 小時','lv'+lvOf(r.ot))).join('')}</div>`:''}
+    ${lates.length?`<div class="note">超過 3 天未填日報</div><div class="chips">${lates.map(r=>chip(r,r.late+' 天','lv3')).join('')}</div>`:''}`
+   :'<div class="note">目前沒有加班超標或逾期未填的人員 ✓</div>');
+ // 矩陣
+ const days=daysOf(period),WDN='日一二三四五六';
+ const head=`<thead><tr><th class="nm">人員</th>${days.map(d=>{const w=isWork(d);return`<th class="${w?'':'off'}" title="${d}${offName(d)?' '+esc(offName(d)):''}">${+d.slice(8)}<small>${WDN[parseD(d).getDay()]}</small></th>`}).join('')}<th class="sum">已填</th><th class="sum">缺</th><th class="sum">請假</th><th class="sum">加班(h)</th></tr></thead>`;
+ const body=L.map(r=>{
+  const lv=lvOf(r.ot);
+  return`<tr><td class="nm">${esc(r.p.name)}<small>${esc(r.p.emp)}</small></td>${r.cells.map(c=>`<td class="c st-${c.st}" data-emp="${esc(r.p.emp)}" data-date="${c.d}" title="${c.d}">${SYM[c.st]}</td>`).join('')}
+   <td class="sum">${r.done}</td><td class="sum ${r.late?'st-late':''}">${r.late+r.pend||''}</td><td class="sum">${r.leave||''}</td><td class="sum lv${lv}"><b>${Math.round(r.ot*10)/10}</b></td></tr>`}).join('');
+ $('#mx').innerHTML=head+`<tbody>${body}</tbody>`;
+}
+document.addEventListener('click',e=>{
+ const c=e.target.closest('td.c');if(c){openDay(c.dataset.emp,c.dataset.date);return}
+ const ch=e.target.closest('.chip');if(ch){const el=document.querySelector(`td.nm small`);$('#q').value=ch.dataset.emp;render()}
+});
+
+/* ---------- 單日明細（唯讀） ---------- */
+async function openStored(x){
+ if(!x||!x.path)return;const w=window.open('','_blank');
+ const{data:r,error}=await sb.storage.from('attachments').createSignedUrl(x.path,300);
+ if(error||!r){if(w)w.close();alert('開啟失敗：'+(error?error.message:''));return}
+ if(w)w.location=r.signedUrl;else location.href=r.signedUrl;
+}
+let dlgFiles=[];
+function openDay(emp,date){
+ const p=people.find(x=>x.emp===emp),r=(byEmp[emp]||{})[date],d=parseD(date);
+ const head=`<h3>${esc(p.name)}（${esc(emp)}）</h3><div class="mute">${date.replace(/-/g,'/')}（週${'日一二三四五六'[d.getDay()]}）${isWork(date)?'':'・'+esc(offName(date)||'假日')}</div>`;
+ if(!r||!hasContent(r)){$('#dayBody').innerHTML=head+'<p class="mute">這一天沒有填寫日報。</p>';dlgFiles=[];$('#dayDlg').showModal();return}
+ const f=r.f||{},h=otHours(f,date);dlgFiles=[];
+ const items=(r.today||[]).filter(hasItem).map(x=>`<div><span>${esc(itemText(x))}</span><span>${x.p!==''&&x.p!=null?x.p+'%':''}</span><span class="mute">${esc(x.r||'')}</span></div>`).join('');
+ const SP=SPECIAL_LIST.map(([k,t])=>{
+  const txt=secOut(f,k);if(!txt)return'';
+  return`<div class="sec"><b>${t}</b><pre class="${txt===NONE?'mute':''}">${esc(txt)}</pre></div>`}).join('');
+ (f.att||[]).forEach(x=>dlgFiles.push(x));(f.budgets||[]).forEach(b=>(b.files||[]).forEach(x=>dlgFiles.push(x)));
+ const files=dlgFiles.length?`<div class="sec"><b>附件</b>${dlgFiles.map((x,i)=>`<button data-f="${i}" style="margin:2px 6px 2px 0">📄 ${esc(x.name)}</button>`).join('')}</div>`:'';
+ $('#dayBody').innerHTML=head+`<div class="kv">
+  ${f.leave?`<b>請假</b><span>${esc(leaveText(f))}</span>`:''}
+  ${!leaveFull(f)?`<b>出勤</b><span>上班 ${esc(f.tIn||'--:--')}　離廠 ${esc(f.tOut||'--:--')}　下班 ${esc(f.tOff||'--:--')}${h>0?`　<b style="color:inherit">加班 ${fmtH(h)}</b>`:''}</span>`:''}
+  </div>${items?`<div class="it">${items}</div>`:''}${SP}${files}`;
+ $('#dayDlg').showModal();
+}
+const SPECIAL_LIST=[['cust','客戶協定內容'],['budget','預算調整'],['award','專案發包'],['bill','案件請款'],['qa','品質查核紀錄'],['hse','工安查核紀錄'],['abn','異常說明'],['sug','建議事項']];
+$('#dayBody').addEventListener('click',e=>{const b=e.target.closest('[data-f]');if(b)openStored(dlgFiles[+b.dataset.f])});
+$('#dayClose').onclick=()=>$('#dayDlg').close();
+
+/* ---------- 匯出 Excel ---------- */
+$('#btnXls').onclick=async()=>{
+ if(!window.ExcelJS){alert('Excel 元件未載入');return}
+ const days=daysOf(period),wb=new ExcelJS.Workbook(),ws=wb.addWorksheet('日報填寫狀況');
+ const th={style:'thin',color:{argb:'FF999999'}},bd={top:th,left:th,bottom:th,right:th};
+ ws.addRow(['員編','姓名',...days.map(d=>`${+d.slice(5,7)}/${+d.slice(8)}`),'已填','缺','請假(天)','加班(小時)']);
+ const FILL={done:'FFD9F2E3',leave:'FFE9DEFC',late:'FFFBD5D0',pend:'FFFFF0C9',ot:'FFDBE9FB',off:'FFEFEFEF'};
+ rowsData.forEach(r=>{
+  const row=ws.addRow([r.p.emp,r.p.name,...r.cells.map(c=>SYM[c.st]),r.done,r.late+r.pend,r.leave||'',Math.round(r.ot*10)/10]);
+  r.cells.forEach((c,i)=>{if(FILL[c.st])row.getCell(3+i).fill={type:'pattern',pattern:'solid',fgColor:{argb:FILL[c.st]}}});
+ });
+ ws.eachRow(row=>row.eachCell(c=>{c.border=bd;c.alignment={horizontal:'center',vertical:'middle'}}));
+ ws.getRow(1).font={bold:true};ws.getColumn(1).width=8;ws.getColumn(2).width=10;
+ for(let i=3;i<3+days.length;i++)ws.getColumn(i).width=5;
+ ws.views=[{state:'frozen',xSplit:2,ySplit:1}];
+ const buf=await wb.xlsx.writeBuffer(),a=document.createElement('a');
+ a.href=URL.createObjectURL(new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}));
+ a.download=`日報填寫狀況_${period.start}_${period.end}.xlsx`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),10000);
+};
+
+boot();
+</script>
+</body>
+</html>
