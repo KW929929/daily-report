@@ -1,0 +1,1367 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>工作日報表</title>
+<style>
+:root{--bg:#f4f6f9;--card:#fff;--ink:#1c2430;--mute:#6b7685;--line:#dde2ea;--pri:#1f5fbf;--pri-d:#174a96;--ok:#1b8a4b;--warn:#c47a00;--bad:#c0392b}
+@media (prefers-color-scheme:dark){:root{--bg:#12161c;--card:#1b222b;--ink:#e6eaf0;--mute:#97a3b3;--line:#2c3643;--pri:#5b9bf0;--pri-d:#7fb2f5}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 "Microsoft JhengHei","PingFang TC",system-ui,sans-serif}
+header.top{position:sticky;top:0;z-index:5;background:var(--card);border-bottom:1px solid var(--line);padding:10px 16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+header.top h1{font-size:17px;margin:0;flex:1;min-width:180px}
+header.top h1 small{display:block;font-weight:400;color:var(--mute);font-size:12px}
+.status{font-size:12px;color:var(--ok)}
+main{max-width:980px;margin:0 auto;padding:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:14px}
+.card>h2{font-size:15px;margin:0 0 10px;display:flex;align-items:center;gap:8px}
+.card>h2 .hint{font-weight:400;color:var(--mute);font-size:12px}
+.grid{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+label.f{display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--mute)}
+input,textarea,select{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:7px 9px;width:100%}
+input:focus,textarea:focus{outline:2px solid var(--pri);outline-offset:-1px}
+textarea{resize:vertical;min-height:64px}
+.pctw{display:flex;gap:4px;align-items:center;min-width:0}.pctw .pct{flex:1;min-width:0}
+button.fin{padding:6px 8px;font-size:12px;color:var(--ok);border-color:var(--ok);white-space:nowrap}
+button.fin:hover{background:var(--ok);color:#fff}
+.row{display:grid;grid-template-columns:28px 150px 1.4fr 150px 1fr 32px;gap:8px;align-items:center;margin-bottom:8px}
+.row.t{grid-template-columns:28px 150px 1fr 150px 32px}
+.row .n{color:var(--mute);text-align:center;font-size:12px}
+.pct{position:relative}.pct input{padding-right:24px;text-align:right}.pct::after{content:"%";position:absolute;right:9px;top:50%;transform:translateY(-50%);color:var(--mute)}
+.colh{display:grid;grid-template-columns:28px 150px 1.4fr 150px 1fr 32px;gap:8px;font-size:12px;color:var(--mute);margin-bottom:4px}
+.colh.t{grid-template-columns:28px 150px 1fr 150px 32px}
+button{font:inherit;cursor:pointer;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:6px;padding:6px 12px}
+button:hover{border-color:var(--pri)}
+button.pri{background:var(--pri);border-color:var(--pri);color:#fff}button.pri:hover{background:var(--pri-d)}
+button.x{padding:4px 0;width:32px;color:var(--bad)}
+button.add{border-style:dashed;color:var(--pri);width:100%}
+.bar{display:flex;gap:8px;flex-wrap:wrap}
+.times{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+.chk{display:flex;gap:16px;font-size:14px;margin:2px 0 10px}
+.chk label{display:flex;gap:5px;align-items:center}.chk input{width:auto}
+details.card summary{cursor:pointer;font-weight:600;list-style:none;display:flex;align-items:center;gap:8px}
+details.card summary::before{content:"▸";color:var(--mute);transition:.15s}details[open].card summary::before{transform:rotate(90deg)}
+.bud{border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-bottom:10px;display:grid;gap:10px;background:var(--bg)}
+.bud input,.bud textarea{background:var(--card)}
+.budh{display:flex;align-items:center;justify-content:space-between;font-size:13px}
+.bfiles{list-style:none;margin:8px 0 4px;padding:0;display:grid;gap:6px}
+.bfiles li{display:flex;align-items:center;gap:8px;padding:6px 10px;border:1px solid var(--line);border-radius:6px;background:var(--card);font-size:13px}
+.bfiles li a{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--pri);cursor:pointer}
+.bfiles li span{color:var(--mute);font-size:12px;white-space:nowrap}.bfiles li button{padding:2px 8px;color:var(--bad)}
+.bwarn{display:none;margin-top:6px;padding:6px 10px;border-radius:6px;background:#fbd5d0;color:#7a1c12;font-size:13px}
+@media (prefers-color-scheme:dark){.bwarn{background:#561f1a;color:#ffd6d1}}
+[data-bdrop].over{border-color:var(--pri);background:rgba(31,95,191,.08)}
+.att .drop{border:1.5px dashed var(--line);border-radius:8px;padding:12px;text-align:center;font-size:13px;color:var(--mute)}
+.att .drop.over{border-color:var(--pri);background:rgba(31,95,191,.08)}
+#attList{list-style:none;margin:8px 0 4px;padding:0;display:grid;gap:6px}
+#attList li{display:flex;align-items:center;gap:8px;padding:6px 10px;border:1px solid var(--line);border-radius:6px;background:var(--bg);font-size:13px}
+#attList li a{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--pri);cursor:pointer}
+#attList li span{color:var(--mute);font-size:12px;white-space:nowrap}
+#attList li button{padding:2px 8px;color:var(--bad)}
+details.card summary .dot{flex:none}
+details.card summary .none{margin-left:auto;font-weight:400;font-size:12px;padding:3px 10px;border-radius:14px;color:var(--mute)}
+details.card summary .none.on{background:var(--mute);border-color:var(--mute);color:var(--card)}
+details.card summary .none.on::before{content:"✓ "}
+details.card.isnone .dot{background:var(--mute)}
+details.card summary .hint{font-weight:400;color:var(--mute);font-size:12px}
+details.card summary .dot{width:8px;height:8px;border-radius:50%;background:var(--ok);display:none}
+details.card.has summary .dot{display:inline-block}
+details.card .body{margin-top:10px;display:grid;gap:10px}
+.note{font-size:12px;color:var(--mute);line-height:1.7}
+.calnav{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.calnav b{flex:1;text-align:center;font-size:16px}
+.calnav button{padding:5px 12px}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.cal .wd{text-align:center;font-size:12px;color:var(--mute);padding:2px 0}
+.cal .wd.we{color:var(--bad)}
+.cal .blank{min-height:46px}
+.cal button.day{min-height:46px;padding:2px;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;line-height:1.2;background:var(--bg);border:1px solid var(--line)}
+.cal button.day small{font-size:10px;color:var(--mute);max-width:100%;overflow:hidden;white-space:nowrap}
+.cal button.day.off{background:transparent;color:var(--mute);border-style:dashed}
+.cal button.day.done{background:#d9f2e3;border-color:#7cc79a;color:#14532d}
+.cal button.day.plan{background:#dbe9fb;border-color:#7aa9e6;color:#133c78}
+.legend .lg.plan{background:#dbe9fb;border-color:#7aa9e6}
+.nexthint{margin-top:10px;padding:8px 12px;border-radius:8px;background:var(--bg);border:1px dashed var(--line);font-size:13px;color:var(--mute)}
+.nexthint:empty{display:none}.nexthint a{color:var(--pri);cursor:pointer;margin-left:6px;text-decoration:underline}
+.cal button.day.pend{background:#fff0c9;border-color:#e3b341;color:#6b4a00}
+.cal button.day.late{background:#fbd5d0;border-color:#e06c5f;color:#7a1c12;font-weight:700}
+.cal button.day.today b{text-decoration:underline}
+.cal button.day.pick{background:var(--pri);border-color:var(--pri);color:#fff}
+.cal button.day.pick small{color:#fff}
+.cal button.day.sel{outline:3px solid var(--pri);outline-offset:1px}
+.cal button.day.fut{opacity:.65}
+@media (prefers-color-scheme:dark){
+ .cal button.day.done{background:#1d4430;border-color:#2f7a52;color:#cdeedb}
+ .cal button.day.pend{background:#4a3a10;border-color:#a8801f;color:#ffe8a8}
+ .cal button.day.plan{background:#1c3556;border-color:#3f6fae;color:#cfe2fb}
+ .cal button.day.late{background:#561f1a;border-color:#b0483d;color:#ffd6d1}
+}
+.legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px;font-size:12px;color:var(--mute)}
+.legend .lg{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:4px;vertical-align:-2px;border:1px solid var(--line)}
+.legend .lg.done{background:#d9f2e3;border-color:#7cc79a}.legend .lg.pend{background:#fff0c9;border-color:#e3b341}
+.legend .lg.late{background:#fbd5d0;border-color:#e06c5f}.legend .lg.off{border-style:dashed}
+#warnBar:not(:empty){margin-bottom:10px;padding:8px 12px;border-radius:8px;border:1px solid #e06c5f;background:#fbd5d0;color:#7a1c12;font-size:13px}
+#warnBar.amber{border-color:#e3b341;background:#fff0c9;color:#6b4a00}
+#warnBar a{display:inline-block;margin:2px 4px 0 0;padding:1px 8px;border-radius:12px;background:rgba(255,255,255,.7);color:inherit;cursor:pointer;text-decoration:none;border:1px solid currentColor}
+@media (prefers-color-scheme:dark){#warnBar:not(:empty){background:#561f1a;color:#ffd6d1}#warnBar.amber{background:#4a3a10;color:#ffe8a8}#warnBar a{background:rgba(0,0,0,.25)}}
+@media (max-width:640px){.cal button.day small{display:none}}
+#form.locked{opacity:.4;pointer-events:none;user-select:none}
+input[readonly]{opacity:.9;cursor:not-allowed;font-weight:600}
+button:disabled{opacity:.4;cursor:not-allowed}
+dialog{border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--ink);padding:18px 20px;width:min(640px,94vw)}
+dialog::backdrop{background:rgba(0,0,0,.45)}
+dialog h3{margin:0 0 8px;font-size:16px}
+#plPrev{max-height:240px;overflow:auto;border:1px solid var(--line);border-radius:8px;font-size:13px}
+#plPrev:empty{display:none}
+#plPrev div{display:flex;justify-content:space-between;padding:4px 10px;border-bottom:1px solid var(--line)}
+#plPrev div:last-child{border-bottom:0}#plPrev .we{color:var(--mute)}#plPrev .sum{background:var(--bg);font-weight:600}
+#form.leave-full .hideOnLeave{display:none}
+.rt{margin-left:auto;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+#btnNormal{font-size:12px;padding:4px 12px;font-weight:400}
+.lvchk{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:400;cursor:pointer}
+.lvchk input{width:auto}
+#leaveSum{margin:0 0 10px;padding:8px 12px;border-radius:8px;background:#e9defc;color:#3b1f78;font-size:13px}
+#leaveSum a{margin-left:8px;color:inherit;text-decoration:underline;cursor:pointer}
+@media (prefers-color-scheme:dark){#leaveSum{background:#352a58;color:#e3d9ff}}
+#leaveCard.on{border-color:#a78bfa;background:rgba(167,139,250,.08)}
+.cal button.day.leave{background:#e9defc;border-color:#a78bfa;color:#3b1f78}
+.legend .lg.leave{background:#e9defc;border-color:#a78bfa}
+@media (prefers-color-scheme:dark){.cal button.day.leave{background:#352a58;border-color:#7c63c4;color:#e3d9ff}}
+#alertCard .alrow{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;padding:8px 12px;border-radius:8px;border:1px solid var(--line);background:var(--bg);font-size:13px;margin-bottom:8px}
+#alertCard .alrow b{font-size:16px}#alertCard .alnote{color:var(--mute);font-size:12px}
+#alertCard .alrow.ot1{border-color:#e3b341;background:rgba(227,179,65,.15)}
+#alertCard .alrow.ot2{border-color:#f08c00;background:rgba(240,140,0,.15)}
+#alertCard .alrow.ot3{border-color:#d64545;background:rgba(214,69,69,.15)}
+#alertCard .alrow.ot4{border-color:#7a1c4d;background:rgba(122,28,77,.18)}
+#alertCard .uph{font-size:13px;font-weight:600;margin:4px 0 6px}
+#alertCard .upl{display:flex;gap:10px;padding:5px 2px;border-bottom:1px solid var(--line);font-size:13px}
+#alertCard .upl:last-child{border-bottom:0}
+#alertCard .upl a{flex:none;min-width:84px;color:var(--pri);cursor:pointer;text-decoration:underline}
+#alertCard .upl i{color:var(--mute);font-style:normal;font-size:12px}#alertCard .upl em{color:var(--mute);font-style:normal;font-size:12px}
+#alertCard .upl.empty span{color:#b7791f}
+#alertCard .lv{background:#e9defc;color:#3b1f78;border-radius:10px;padding:0 8px;margin-right:6px}
+#alertCard .upwarn{margin:2px 0 6px;padding:6px 10px;border-radius:8px;background:rgba(227,179,65,.18);border:1px solid #e3b341;font-size:13px}
+#alertCard .upwarn a{color:var(--pri);cursor:pointer;text-decoration:underline}
+.ot{margin-top:8px;font-size:13px;color:var(--mute)}
+#otBox{margin-top:14px;padding-top:12px;border-top:1px dashed var(--line)}
+.otHead{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:baseline;font-size:13px}
+.otHead b{font-size:18px}
+.otBar{position:relative;height:14px;border-radius:7px;background:var(--bg);border:1px solid var(--line);margin:14px 0 20px;overflow:visible}
+.otFill{height:100%;border-radius:7px;background:#3aa76d;transition:width .2s}
+.otTick{position:absolute;top:-4px;width:1px;height:20px;background:var(--mute)}
+.otTick span{position:absolute;top:21px;left:50%;transform:translateX(-50%);font-size:11px;color:var(--mute);white-space:nowrap}
+.ot0 .otFill{background:#3aa76d}.ot1 .otFill{background:#e3b341}.ot2 .otFill{background:#f08c00}.ot3 .otFill{background:#d64545}.ot4 .otFill{background:#7a1c4d}
+.otTag{display:inline-block;padding:1px 10px;border-radius:12px;font-size:12px;color:#fff;background:#3aa76d}
+.ot1 .otTag{background:#c99a1f}.ot2 .otTag{background:#e07b00}.ot3 .otTag{background:#d64545}.ot4 .otTag{background:#7a1c4d}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#222;color:#fff;padding:8px 16px;border-radius:20px;font-size:13px;opacity:0;transition:.2s;pointer-events:none}
+.toast.on{opacity:1}
+@media (max-width:760px){
+ .colh{display:none}
+ .row,.row.t{grid-template-columns:22px 1fr 138px 28px}
+ .row .n{grid-row:1}.row .c{grid-column:2;grid-row:1}.row .pctw{grid-column:3;grid-row:1}.row .x{grid-column:4;grid-row:1}
+ .row .tx{grid-column:2/5;grid-row:2}.row .rk{grid-column:2/5;grid-row:3}
+ .row{margin-bottom:14px}
+}
+/* ===== 列印版（仿原表格） ===== */
+#print{display:none}
+@media print{
+ body{background:#fff;color:#000;font-size:11px}
+ header.top,main,.toast{display:none!important}
+ #print{display:block}
+ #print table{width:100%;border-collapse:collapse}
+ #print td,#print th{border:1px solid #000;padding:3px 5px;vertical-align:top;white-space:pre-wrap}
+ #print .c{text-align:center}#print .h{background:#eee;font-weight:700;text-align:center}
+ #print h1,#print h2{text-align:center;margin:0}#print h1{font-size:18px}#print h2{font-size:15px;margin-bottom:4px}
+ @page{size:A4;margin:10mm}
+}
+</style>
+</head>
+<body>
+<header class="top">
+ <h1>工作日報表 <small>兆聯實業股份有限公司 ・ 自動儲存於本機瀏覽器</small></h1>
+ <span class="status" id="status"></span>
+ <div class="bar">
+  <button id="btnCopy">複製文字</button>
+  <button id="btnJson">匯出檔案</button>
+  <button id="btnImport">匯入</button>
+  <button class="pri" id="btnPrint">列印 / 存 PDF</button>
+ </div>
+ <input type="file" id="file" accept=".json" hidden>
+ <input type="file" id="bFile" multiple hidden>
+</header>
+
+<main>
+ <section class="card nas" id="nasBar">
+  <h2>NAS 儲存位置 <span class="hint">日報會存成 JSON 及月報 Excel</span></h2>
+  <div class="bar" style="align-items:center"><span id="nasMsg" style="flex:1;min-width:200px"></span><span id="nasBtns" class="bar"></span></div>
+ </section>
+
+<div id="form" class="locked">
+ <section class="card" id="alertCard" hidden>
+  <h2>🔔 提醒與警示</h2>
+  <div id="alOt"></div>
+  <div id="warnBar"></div>
+  <div id="alUp"></div>
+ </section>
+ <section class="card">
+  <h2>基本資料 <span class="hint">🔒 由 NAS 個人資料夾的 profile.json 帶入，無法修改</span></h2>
+  <div class="grid">
+   <label class="f">部門<input id="dept" readonly placeholder="連線後自動帶入"></label>
+   <label class="f">員工編號<input id="emp" readonly placeholder="連線後自動帶入"></label>
+   <label class="f">填表人<input id="name" readonly placeholder="連線後自動帶入"></label>
+   <input id="date" type="hidden">
+  </div>
+ </section>
+
+ <section class="card" id="calCard">
+  <h2>填表日期 <span class="hint" id="calSel"></span></h2>
+
+  <div class="calnav">
+   <button id="calPrev" aria-label="上個月">‹</button>
+   <b id="calTitle"></b>
+   <button id="calNext" aria-label="下個月">›</button>
+   <button id="calToday">回到今天</button>
+   <button id="btnMonthly" title="輸出本月所有上班日的工作記事與特殊事項">匯出本月月報表</button>
+  </div>
+  <div class="cal" id="calGrid"></div>
+  <div class="legend">
+   <span><i class="lg done"></i>已填寫</span><span><i class="lg plan"></i>預先填寫</span><span><i class="lg pend"></i>待補（3 日內）</span>
+   <span><i class="lg late"></i>逾 3 日未填</span><span><i class="lg leave"></i>請假</span><span><i class="lg off"></i>假日（免填）</span>
+  </div>
+ </section>
+
+ <section class="card" id="leaveCard">
+  <h2>出勤時間 <span class="rt"><button type="button" id="btnNormal" title="上班 08:30、下班 17:30，不計加班">正常上下班（08:30～17:30）</button><label class="lvchk"><input type="checkbox" id="chkLeave">本日請假</label></span></h2>
+  <div id="leaveSum" hidden></div>
+  <div class="times hideOnLeave">
+   <label class="f">上班（入廠）<input type="time" id="tIn" value="08:30"></label>
+   <label class="f">離廠<input type="time" id="tOut"></label>
+   <label class="f">下班<input type="time" id="tOff" value="17:30"></label>
+  </div>
+  <div class="ot hideOnLeave" id="otToday"></div>
+  <div id="otBox"></div>
+ </section>
+
+ <section class="card hideOnLeave">
+  <h2>今日工作主要工項<span class="hint">也可先切到下一個上班日預先填寫，進度先填預估值</span></h2>
+  <div class="colh"><span></span><span>案號</span><span>工作記事</span><span>進度</span><span>備註（異常說明）</span><span></span></div>
+  <div id="todayRows"></div>
+  <div class="bar" style="margin-top:6px">
+   <button class="add" id="addToday" style="flex:1">＋ 新增工項</button>
+   <button id="btnPlan" title="一個案件連續多天的工項，一次排入並自動分配每日進度">預排多日工項</button>
+   <button id="carryNext" title="把進度未達 100% 的工項複製到下一個上班日">未完成工項 → 下一個上班日</button>
+  </div>
+  <div class="nexthint" id="nextHint"></div>
+ </section>
+
+
+
+ <div class="bar hideOnLeave" style="justify-content:flex-end;margin:-4px 0 10px">
+  <button type="button" id="noneAll" title="沒有內容的欄位一次標記為「本日無相關事項」（已有內容的不受影響）">全部標記「本日無相關事項」</button>
+ </div>
+
+ <details class="card hideOnLeave" data-k="cust"><summary>客戶協定內容<span class="hint">（與客戶討論、信件等事項）</span><span class="dot"></span><button type="button" class="none" data-none="cust" aria-pressed="false">本日無相關事項</button></summary><div class="body"><label class="f"><textarea data-f="cust" placeholder="例：與客戶討論的結論、往來信件重點、口頭協定事項"></textarea></label>
+  <div class="att">
+   <div class="drop" id="attDrop">📎 信件（.msg / .eml）、會議記錄等檔案，可拖曳到這裡，或
+    <button type="button" id="attBtn">選擇檔案</button><input type="file" id="attFile" multiple hidden></div>
+   <ul id="attList"></ul>
+   <div class="note">檔案會直接存到 NAS 個人資料夾的「年\月\_附件\日期」底下，單檔上限 100 MB。</div>
+  </div>
+ </div></details>
+
+ <details class="card hideOnLeave" data-k="budget"><summary>預算調整<span class="dot"></span><button type="button" class="none" data-none="budget" aria-pressed="false">本日無相關事項</button></summary><div class="body">
+  <div id="budgetList"></div>
+  <button type="button" class="add" id="addBudget">＋ 新增一筆預算調整</button>
+ </div></details>
+
+ <details class="card hideOnLeave" data-k="award"><summary>專案發包<span class="hint">（特殊工程或設備發包可提出記事）</span><span class="dot"></span><button type="button" class="none" data-none="award" aria-pressed="false">本日無相關事項</button></summary><div class="body">
+  <div id="awardList"></div>
+  <button type="button" class="add" id="addAward">＋ 新增一筆專案發包</button>
+ </div></details>
+
+ <details class="card hideOnLeave" data-k="bill"><summary>案件請款<span class="dot"></span><button type="button" class="none" data-none="bill" aria-pressed="false">本日無相關事項</button></summary><div class="body">
+  <div id="billList"></div>
+  <button type="button" class="add" id="addBill">＋ 新增一筆案件請款</button>
+ </div></details>
+
+ <details class="card hideOnLeave" data-k="qa"><summary>品質查核紀錄<span class="dot"></span><button type="button" class="none" data-none="qa" aria-pressed="false">本日無相關事項</button></summary><div class="body">
+  <label class="f"><textarea data-f="qa"></textarea></label>
+  <div class="note">內頁及業務人員無需填寫。</div></div></details>
+
+ <details class="card hideOnLeave" data-k="hse"><summary>工安查核紀錄<span class="dot"></span><button type="button" class="none" data-none="hse" aria-pressed="false">本日無相關事項</button></summary><div class="body">
+  <label class="f"><textarea data-f="hse"></textarea></label>
+  <div class="note">品質及試車人員無需填寫。</div></div></details>
+
+ <details class="card hideOnLeave" data-k="abn"><summary>異常說明<span class="dot"></span><button type="button" class="none" data-none="abn" aria-pressed="false">本日無相關事項</button></summary><div class="body"><label class="f"><textarea data-f="abn"></textarea></label></div></details>
+ <details class="card hideOnLeave" data-k="sug"><summary>建議事項<span class="dot"></span><button type="button" class="none" data-none="sug" aria-pressed="false">本日無相關事項</button></summary><div class="body"><label class="f"><textarea data-f="sug"></textarea></label></div></details>
+
+ <section class="card note">
+  <b>填表說明</b><br>
+  1. 工作內容必須為實際工作現況（進度），須按具體時間完整記錄。<br>
+  2. 如執行多項案件則工程名稱填寫主要案件，其餘於工項進行表列。<br>
+  3. 重要目標泛指主要進度指標、請款指標等，專案類為完工或驗收期程，品管類為文件送審期程等。<br>
+  4. 內頁及業務人員無需填寫品質工安查核紀錄，品質及試車人員無需填寫工安查核紀錄。<br>
+  5. 此表於每週呈交區域主管審核後，轉由區域文管每月整合後上傳至公司平台備查。
+  <div style="margin-top:8px"><button id="btnClear">清空本日內容</button></div>
+ </section>
+</div>
+</main>
+
+<dialog id="leaveDlg">
+ <h3>本日請假</h3>
+ <div class="grid">
+  <label class="f">假別<select id="leType"><option>特休</option><option>事假</option><option>病假</option><option>公假</option><option>補休</option><option>喪假</option><option>婚假</option><option>其他</option></select></label>
+  <label class="f">時段<select id="lePart"><option>全天</option><option>上午</option><option>下午</option></select></label>
+ </div>
+ <label class="f" style="margin-top:10px">備註<input id="leNote" placeholder="例：代理人、事由（選填）"></label>
+ <div class="note" style="margin-top:8px">選「全天」時，今日工項與各欄位會自動收起，不用填寫。</div>
+ <div class="bar" style="justify-content:flex-end;margin-top:12px"><button type="button" id="leCancel">取消</button><button type="button" id="leOk" class="pri">確定</button></div>
+</dialog><dialog id="otDlg">
+ <h3 id="otDlgT">⚠ 加班時數警告</h3>
+ <div id="otDlgB" style="line-height:1.7"></div>
+ <div class="bar" style="justify-content:flex-end;margin-top:14px"><button type="button" id="otOk" class="pri">我知道了</button></div>
+</dialog><dialog id="planDlg">
+ <h3>預排多日工項</h3>
+ <div class="note" style="margin-bottom:10px">例：10/19～10/30 執行配管工程。① 填案號、工作記事與進度範圍；② 在日曆選好要排入的日期，系統會依「開工前進度 → 完成時進度」把預計進度平均分配到每一天。已有相同「案號_工作記事」的日子只會更新進度。</div>
+ <div class="grid">
+  <label class="f">案號<input id="plC" list="cases" placeholder="P000000000"></label>
+  <label class="f">工作記事<input id="plT" placeholder="例：配管工程"></label>
+  <label class="f">開工前進度 %<input type="number" id="plP0" min="0" max="100" value="0"></label>
+  <label class="f">完成時進度 %<input type="number" id="plP1" min="0" max="100" value="100"></label>
+ </div>
+
+ <div class="note" style="margin:12px 0 6px">② 點選要排入的日期（週日、假日加班也可直接點選）。按住 <b>Shift</b> 再點另一天，可一次選取兩天之間的所有上班日。</div>
+ <div class="calnav"><button type="button" id="plPrevM">‹</button><b id="plTitle"></b><button type="button" id="plNextM">›</button><button type="button" id="plClear">清除選取</button></div>
+ <div class="cal" id="plCal"></div> <div id="plPrev" style="margin-top:10px"></div>
+ <div class="bar" style="justify-content:flex-end;margin-top:12px">
+  <button id="plCancel" type="button">取消</button><button id="plOk" type="button" class="pri">排入</button>
+ </div>
+</dialog>
+<div id="print"></div>
+<div class="toast" id="toast"></div>
+
+<script src="exceljs.min.js"></script>
+<script>
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const MIN_ROWS=3;
+const FIELDS=$$('[data-f]');
+let data;
+
+const newT=()=>({c:'',t:'',p:'',r:''});
+function blank(){return{today:Array.from({length:MIN_ROWS},newT),f:{}}}
+/* 案號與工作記事分開存放；輸出時合併為「案號_工作記事」 */
+const itemText=r=>{const c=(r.c||'').trim(),t=(r.t||'').trim();return c&&t?`${c}_${t}`:(c||t)};
+const hasItem=r=>!!itemText(r);
+/* 本日請假：f.leave = {type, part(全天/上午/下午), note} */
+const leaveText=f=>f&&f.leave?`本日請假（${f.leave.type}${f.leave.part&&f.leave.part!=='全天'?'・'+f.leave.part:''}）${f.leave.note&&f.leave.note.trim()?'　'+f.leave.note.trim():''}`:'';
+const leaveFull=f=>!!(f&&f.leave&&f.leave.part==='全天');
+const leaveShort=f=>f&&f.leave?`${f.leave.type}${f.leave.part&&f.leave.part!=='全天'?'('+f.leave.part+')':''}`:'';
+/* 輸出用的工項清單：請假列在最前面，後面接有填的工項 */
+const listItems=dd=>(dd.f&&dd.f.leave?[{c:'',t:leaveText(dd.f),p:'',r:''}]:[]).concat((dd.today||[]).filter(hasItem));
+/* 舊資料（整串「P…_內容」存在 t）自動拆成案號 + 內容 */
+function migrate(d){
+ const fix=r=>{if(r&&r.c===undefined){const m=String(r.t||'').match(/^\s*([A-Za-z]\d{5,}[A-Za-z0-9]*)\s*[_＿]\s*([\s\S]*)$/);r.c=m?m[1]:'';if(m)r.t=m[2]}};
+ (d.today||[]).forEach(fix);delete d.tmr;
+ const f=d.f;   // 舊版單筆欄位 → 多筆（budgets / awards / bills）
+ if(f){
+  if(!f.budgets){
+   if(f.budget_no||f.budget_t1||f.budget_t2||f.budget_why)f.budgets=[{no:f.budget_no||'',t1:!!f.budget_t1,t2:!!f.budget_t2,why:f.budget_why||''}];
+   ['budget_no','budget_t1','budget_t2','budget_why'].forEach(k=>delete f[k]);
+  }
+  if(!f.awards){
+   if(f.award_no||f.award_pr||f.award_item)f.awards=[{no:f.award_no||'',pr:f.award_pr||'',item:f.award_item||''}];
+   ['award_no','award_pr','award_item'].forEach(k=>delete f[k]);
+  }
+  if(!f.bills){
+   if(f.bill_no||f.bill_sr)f.bills=[{no:f.bill_no||'',sr:f.bill_sr||''}];
+   ['bill_no','bill_sr'].forEach(k=>delete f[k]);
+  }
+ }
+ return d;
+}
+data=blank();
+
+/* ---------- 各欄位（預算調整…建議事項）的輸出文字；沒內容但勾了「本日無相關事項」就輸出該句 ---------- */
+const NONE='本日無相關事項';
+const newB=()=>({no:'',t1:false,t2:false,why:'',files:[]});
+const tx=v=>!!(v&&String(v).trim());
+const newA=()=>({no:'',pr:'',item:''}),newBl=()=>({no:'',sr:'',note:''});
+/* 可新增多筆的欄位：預算調整 / 專案發包 / 案件請款 */
+const MULTI={
+ budget:{k:'budgets',label:'預算調整',nw:newB,has:e=>tx(e.no)||e.t1||e.t2||tx(e.why)||!!(e.files&&e.files.length),
+  fmt:e=>`專案編號：${e.no||''}\n調整型式： ${boxC(e.t1)}總預算調整  ${boxC(e.t2)}分項調整\n原因：${e.why||''}${e.files&&e.files.length?`\n異常批註單：${e.files.map(x=>x.name).join('、')}`:''}`},
+ award:{k:'awards',label:'專案發包',nw:newA,has:e=>tx(e.no)||tx(e.pr)||tx(e.item),
+  fmt:e=>`專案編號：${e.no||''}\n請購單號：${e.pr||''}\n發包項目：${e.item||''}`},
+ bill:{k:'bills',label:'案件請款',nw:newBl,has:e=>tx(e.no)||tx(e.sr)||tx(e.note),
+  fmt:e=>`案件請款專案編號：${e.no||''}\n※上SR時間：${e.sr||''}${tx(e.note)?`\n備註：${e.note.trim()}`:''}`}
+};
+const SEC={budget:['budgets'],award:['awards'],bill:['bills'],qa:['qa'],hse:['hse'],abn:['abn'],cust:['cust','att'],sug:['sug']};
+const BLANK={budget:'專案編號：\n調整型式： □總預算調整  □分項調整\n原因：',award:'專案編號：\n請購單號：\n發包項目：',bill:'案件請款專案編號：\n※上SR時間：\n'};
+const boxC=b=>b?'■':'□';
+const custText=f=>[f.cust||'',(f.att&&f.att.length)?'附件：'+f.att.map(a=>a.name).join('、'):''].filter(Boolean).join('\n');
+const secHas=(f,k)=>MULTI[k]?(f[MULTI[k].k]||[]).some(MULTI[k].has):SEC[k].some(x=>Array.isArray(f[x])?f[x].length:(typeof f[x]==='string'?f[x].trim():f[x]));
+function secOut(f,k){
+ if(secHas(f,k)){
+  const M=MULTI[k];
+  if(M){
+   const L=f[M.k].filter(M.has);
+   return L.map((e,i)=>`${L.length>1?`【第 ${i+1} 筆】\n`:''}${M.fmt(e)}`).join('\n\n');
+  }
+  if(k==='cust')return custText(f);
+  return String(f[k]).trim();
+ }
+ return f['none_'+k]?NONE:'';
+}
+const secExport=(f,k)=>secOut(f,k)||BLANK[k]||'';
+const ls={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v);return true}catch(e){return false}}};
+const todayStr=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`};
+const keyPrefix=()=>'dr:'+(nas.prof?nas.prof.emp:'?')+':';
+const key=d=>keyPrefix()+d;
+const nasReady=()=>!!(nas.ok&&nas.prof);
+const toast=m=>{const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(toast.h);toast.h=setTimeout(()=>t.classList.remove('on'),1800)};
+const esc=s=>String(s??'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+
+/* ---------- 工項列 ---------- */
+function caseList(){
+ const s=new Set(),add=a=>(a||[]).forEach(r=>{const c=(r.c||'').trim();if(c)s.add(c)});
+ add(data.today);
+ try{for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith(keyPrefix())){const j=JSON.parse(localStorage.getItem(k));add(j.today)}}}catch(e){}
+ return[...s].sort();
+}
+function renderRows(){
+ const inp=(a,i,k,v,cls,ph,extra='')=>`<input class="${cls}" data-a="${a}" data-i="${i}" data-k="${k}" value="${esc(v)}" placeholder="${ph}" ${extra}>`;
+ const pct=(a,i,v)=>`<div class="pctw"><div class="pct"><input type="number" min="0" max="100" inputmode="numeric" data-a="${a}" data-i="${i}" data-k="p" value="${esc(v)}"></div><button type="button" class="fin" data-done="${a}" data-i="${i}" title="進度設為 100%">完成</button></div>`;
+ $('#todayRows').innerHTML=data.today.map((r,i)=>`<div class="row"><span class="n">${i+1}</span>
+  ${inp('today',i,'c',r.c,'c','案號 P000000000','list="cases"')}${inp('today',i,'t',r.t,'tx','工作記事')}${pct('today',i,r.p)}
+  ${inp('today',i,'r',r.r,'rk','備註（異常說明）')}
+  <button class="x" data-del="today" data-i="${i}" title="刪除">✕</button></div>`).join('');
+ let dl=$('#cases');if(!dl){dl=document.createElement('datalist');dl.id='cases';document.body.appendChild(dl)}
+ dl.innerHTML=caseList().map(c=>`<option value="${esc(c)}">`).join('');
+ updateNextHint();
+}
+/* ---------- 預算調整 / 專案發包 / 案件請款（可多筆） ---------- */
+const MULTI_FORM={
+ budget:(e,i)=>`<label class="f">專案編號<input data-mt="budget" data-bi="${i}" data-bk="no" value="${esc(e.no)}"></label>
+  <div class="chk"><span style="color:var(--mute)">調整型式</span>
+   <label><input type="checkbox" data-mt="budget" data-bi="${i}" data-bk="t1" ${e.t1?'checked':''}>總預算調整</label>
+   <label><input type="checkbox" data-mt="budget" data-bi="${i}" data-bk="t2" ${e.t2?'checked':''}>分項調整</label></div>
+  <label class="f">原因<textarea data-mt="budget" data-bi="${i}" data-bk="why">${esc(e.why)}</textarea></label>
+  <div class="att"><div class="drop" data-bdrop="${i}">📎 <b>異常批註單</b>（依規定須先有批註單才可進行預算調整）　拖曳檔案到這裡，或
+    <button type="button" data-bpick="${i}">上傳異常批註單</button></div>
+   <ul class="bfiles">${(e.files||[]).map((x,j)=>`<li><a data-bopen="${i}:${j}" title="開啟">📄 ${esc(x.name)}</a><span>${fmtSize(x.size||0)}</span><button type="button" data-brm="${i}:${j}" title="移除">✕</button></li>`).join('')}</ul>
+   <div class="bwarn" data-bw="${i}">⚠ 尚未上傳異常批註單，依規定不可進行預算調整</div></div>`,
+ award:(e,i)=>`<div class="grid">
+   <label class="f">專案編號<input data-mt="award" data-bi="${i}" data-bk="no" value="${esc(e.no)}"></label>
+   <label class="f">請購單號<input data-mt="award" data-bi="${i}" data-bk="pr" value="${esc(e.pr)}"></label></div>
+  <label class="f">發包項目<textarea data-mt="award" data-bi="${i}" data-bk="item">${esc(e.item)}</textarea></label>`,
+ bill:(e,i)=>`<div class="grid">
+   <label class="f">案件請款專案編號<input data-mt="bill" data-bi="${i}" data-bk="no" value="${esc(e.no)}"></label>
+   <label class="f">※上 SR 時間<input data-mt="bill" data-bi="${i}" data-bk="sr" value="${esc(e.sr)}"></label></div>
+  <label class="f">備註<textarea data-mt="bill" data-bi="${i}" data-bk="note" placeholder="如有狀況可在此另外說明（例：客戶尚未回簽、請款延後）">${esc(e.note)}</textarea></label>`
+};
+function renderMulti(t){
+ const M=MULTI[t];
+ if(!Array.isArray(data.f[M.k])||!data.f[M.k].length)data.f[M.k]=[M.nw()];
+ const L=data.f[M.k],many=L.length>1;
+ $('#'+t+'List').innerHTML=L.map((e,i)=>`<div class="bud">
+  <div class="budh"><b>${many?`第 ${i+1} 筆`:M.label}</b>${many?`<button type="button" class="x" data-delmulti="${t}" data-i="${i}" title="刪除這一筆">✕</button>`:''}</div>
+  ${MULTI_FORM[t](e,i)}</div>`).join('');
+ refreshBudWarn();
+}
+/* 預算調整已填內容、卻沒有異常批註單時，顯示紅色警示 */
+function refreshBudWarn(){
+ $$('[data-bw]').forEach(el=>{
+  const e=(data.f.budgets||[])[+el.dataset.bw]||{};
+  el.style.display=(tx(e.no)||e.t1||e.t2||tx(e.why))&&!(e.files&&e.files.length)?'block':'none';
+ });
+}
+const renderMultiAll=()=>Object.keys(MULTI).forEach(renderMulti);
+Object.keys(MULTI).forEach(t=>{
+ $('#add'+t[0].toUpperCase()+t.slice(1)).onclick=()=>{
+  const M=MULTI[t];(data.f[M.k]=data.f[M.k]||[]).push(M.nw());renderMulti(t);save();
+  const l=$$(`[data-mt=${t}][data-bk=no]`);l[l.length-1].focus();
+ };
+});
+document.addEventListener('click',e=>{
+ const b=e.target.closest('[data-delmulti]');if(!b)return;
+ const t=b.dataset.delmulti,M=MULTI[t],i=+b.dataset.i;
+ if(M.has(data.f[M.k][i])&&!confirm(`要刪除第 ${i+1} 筆${M.label}嗎？`))return;
+ data.f[M.k].splice(i,1);renderMulti(t);markDots();save();
+});document.addEventListener('input',e=>{
+ const el=e.target;
+ if(el.dataset.a){
+  let v=el.value;
+  if(el.dataset.k==='p'&&v!==''){v=Math.max(0,Math.min(100,+v));}
+  data[el.dataset.a][+el.dataset.i][el.dataset.k]=v;
+ }else if(el.dataset.mt){
+  data.f[MULTI[el.dataset.mt].k][+el.dataset.bi][el.dataset.bk]=el.type==='checkbox'?el.checked:el.value;markDots();refreshBudWarn();
+ }else if(el.dataset.f){data.f[el.dataset.f]=el.type==='checkbox'?el.checked:el.value;markDots()}
+ else if(el.id==='tIn'||el.id==='tOut'||el.id==='tOff'){data.f[el.id]=el.value}
+ else if(el.id==='date'){return}
+ save();
+});
+document.addEventListener('click',e=>{
+ const go=e.target.closest('[data-goto]');
+ if(go){selectDate(go.dataset.goto);document.querySelector('#calCard').scrollIntoView({behavior:'smooth'});return}
+ const nb=e.target.closest('[data-none]');
+ if(nb){
+  e.preventDefault();                          // 避免展開/收合 summary
+  const k=nb.dataset.none,key2='none_'+k;
+  if(secHas(data.f,k)){toast('這個欄位已有內容，不需要標記');return}
+  if(data.f[key2])delete data.f[key2];else{data.f[key2]=true;nb.closest('details').open=false}
+  markDots();save();return;
+ }
+ const fin=e.target.closest('[data-done]');
+ if(fin){
+  const a=fin.dataset.done,i=+fin.dataset.i;
+  data[a][i].p=100;
+  const inp=fin.parentElement.querySelector('input');if(inp)inp.value=100;
+  save();return;
+ }
+ const d=e.target.closest('[data-del]');
+ if(d){const a=d.dataset.del;data[a].splice(+d.dataset.i,1);if(!data[a].length)data[a].push(newT());renderRows();save()}
+});
+$('#addToday').onclick=()=>{data.today.push(newT());renderRows();save();$$('[data-a=today][data-k=c]').pop().focus()};
+/* ---------- 儲存 / 載入 ---------- */
+function save(){
+ const d=$('#date').value; if(!d||!nasReady())return;
+ data.savedAt=Date.now();
+ filled[d]=hasContent(data);leaves[d]=leaveShort(data.f);renderCal();renderOt();scheduleUp();
+ const ok=ls.set(key(d),JSON.stringify(data));
+ $('#status').textContent=ok?'已自動儲存 '+new Date().toLocaleTimeString('zh-TW',{hour12:false}):'⚠ 瀏覽器無法儲存，請用「匯出檔案」';
+ $('#status').style.color=ok?'':'var(--bad)';
+ scheduleNas();
+}
+function fill(){
+ FIELDS.forEach(el=>{const v=data.f[el.dataset.f];el.type==='checkbox'?el.checked=!!v:el.value=v??''});
+ ['tIn','tOut','tOff'].forEach(id=>{ if(data.f[id]!==undefined) $('#'+id).value=data.f[id]; });
+ $$('details[data-k]').forEach(d=>d.open=false);
+ renderRows();renderMultiAll();markDots();renderAtt();renderLeave();
+}
+function markDots(){
+ $$('details[data-k]').forEach(d=>{
+  const k=d.dataset.k,has=secHas(data.f,k);
+  if(has)delete data.f['none_'+k];            // 已填內容就不需要「無相關事項」
+  const none=!!data.f['none_'+k];
+  d.classList.toggle('has',has||none);d.classList.toggle('isnone',none);
+  const b=d.querySelector('[data-none]');if(b){b.classList.toggle('on',none);b.setAttribute('aria-pressed',none)}
+  if(has)d.open=true;
+ });
+ const empty=Object.keys(SEC).filter(k=>!secHas(data.f,k)),b=$('#noneAll');
+ if(b){
+  const allOn=empty.length>0&&empty.every(k=>data.f['none_'+k]);
+  b.textContent=allOn?'取消全部標記':'全部標記「本日無相關事項」';
+  b.disabled=!empty.length;
+ }
+}
+$('#noneAll').onclick=()=>{
+ const f=data.f,empty=Object.keys(SEC).filter(k=>!secHas(f,k));
+ if(!empty.length)return;
+ const allOn=empty.every(k=>f['none_'+k]);
+ empty.forEach(k=>{
+  if(allOn)delete f['none_'+k];
+  else{f['none_'+k]=true;document.querySelector(`details[data-k=${k}]`).open=false}
+ });
+ markDots();save();
+ toast(allOn?'已取消全部標記':`已將 ${empty.length} 個空白欄位標記為「本日無相關事項」`);
+};
+async function load(d){
+ if(!nasReady())return;
+ let raw=ls.get(key(d)); data=blank();
+ if(raw){try{data=migrate(Object.assign(blank(),JSON.parse(raw)))}catch(e){}}
+ if(!data.f.tIn&&!raw){data.f.tIn='08:30';data.f.tOff='17:30';data.f.tOut=''}
+ fill();
+ {
+  try{
+   const j=await nasRead(d);
+   if(j&&d===$('#date').value&&(j.savedAt||0)>(data.savedAt||0)){data=migrate(Object.assign(blank(),j));fill();ls.set(key(d),JSON.stringify(data));toast('已從 NAS 載入')}
+  }catch(e){}
+ }
+ if(d===$('#date').value){filled[d]=hasContent(data);leaves[d]=leaveShort(data.f);renderCal();renderOt()}
+}
+
+/* ---------- 下一個上班日（預估明日工項的來源） ---------- */
+function stepWorkday(s,dir){
+ const d=parseD(s);
+ for(let i=0;i<14;i++){d.setDate(d.getDate()+dir);const x=fmtD(d);if(isWork(x))return x}
+ return fmtD(d);
+}
+const nextWorkday=s=>stepWorkday(s,1),prevWorkday=s=>stepWorkday(s,-1);
+const itemsOf=dd=>migrate({today:(dd&&dd.today)||[]}).today.filter(hasItem).map(r=>({c:r.c,t:r.t,p:r.p}));
+/* 下一個上班日已預先填寫的工項（本機草稿與 NAS 取較新者） */
+async function nextItemsFor(d){
+ const n=nextWorkday(d);let j=null;
+ try{const raw=ls.get(key(n));if(raw)j=JSON.parse(raw)}catch(e){}
+ if(nasReady()){try{const nj=await nasRead(n);if(nj&&(!j||(nj.savedAt||0)>(j.savedAt||0)))j=nj}catch(e){}}
+ return{date:n,items:itemsOf(j)};
+}
+/* 讀取任一天的完整日報（本機草稿與 NAS 取較新者） */
+async function loadDay(d){
+ let j=null;
+ try{const raw=ls.get(key(d));if(raw)j=JSON.parse(raw)}catch(e){}
+ if(nasReady()){try{const nj=await nasRead(d);if(nj&&(!j||(nj.savedAt||0)>(j.savedAt||0)))j=nj}catch(e){}}
+ const dd=migrate(Object.assign(blank(),j||{}));
+ if(!j){dd.f.tIn='08:30';dd.f.tOff='17:30';dd.f.tOut=''}
+ return dd;
+}
+async function writeDayJson(d,dd){
+ const p=nasPath(d),md=await sub(await sub(nas.root,p.y),p.month),jd=await sub(md,'_資料');
+ await writeFile(jd,p.file,JSON.stringify({date:d,dept:nas.prof.dept,emp:nas.prof.emp,name:nas.prof.name,...dd}));
+}
+/* 進度未達 100%（含未填進度）的工項，複製到下一個上班日；已存在的工項不重複加入 */
+async function carryToNext(){
+ if(!nasReady())return;
+ const d=$('#date').value,n=nextWorkday(d);
+ const items=data.today.filter(r=>hasItem(r)&&!(+r.p>=100)).map(r=>({c:r.c,t:r.t,p:r.p,r:''}));
+ if(!items.length){toast('沒有未完成的工項（進度皆為 100%）');return}
+ const nd=await loadDay(n);
+ const have=new Set(nd.today.filter(hasItem).map(itemText));
+ const add=items.filter(r=>!have.has(itemText(r)));
+ if(!add.length){toast('下一個上班日已經有這些工項了');return}
+ const rows=nd.today.filter(hasItem).concat(add);while(rows.length<MIN_ROWS)rows.push(newT());
+ nd.today=rows;nd.savedAt=Date.now();
+ ls.set(key(n),JSON.stringify(nd));filled[n]=true;
+ nasQ=nasQ.then(()=>writeDayJson(n,nd)).catch(e=>toast('NAS 寫入失敗：'+e.message));
+ flushNas(false);                       // 本日的 Excel「預估明日」欄位一併更新
+ renderCal();updateNextHint();scheduleUp();
+ const w=`${+n.slice(5,7)}/${+n.slice(8)}（週${WD[parseD(n).getDay()]}）`;
+ toast(`已把 ${add.length} 項未完成工項帶到 ${w}`);
+}
+$('#carryNext').onclick=carryToNext;
+async function updateNextHint(){
+ const el=$('#nextHint');if(!el)return;
+ const d=$('#date').value;if(!d||!nasReady()){el.innerHTML='';return}
+ const r=await nextItemsFor(d);if(d!==$('#date').value)return;
+ const w=`${+r.date.slice(5,7)}/${+r.date.slice(8)}（週${WD[parseD(r.date).getDay()]}）`;
+ el.innerHTML=`📅 匯出時「預估明日工作」會自動帶入下一個上班日 <b>${w}</b> 預先填寫的工項（目前 <b>${r.items.length}</b> 項）。<a data-goto="${r.date}">${r.items.length?'前往查看／修改':'前往預先填寫'}</a>`;
+}
+/* ---------- 文字輸出 ---------- */
+const pad=n=>String(n).padStart(2,'0');
+async function textOut(){
+ const f=data.f,L=[];
+ L.push(`【工作日報表】${$('#date').value}  ${$('#dept').value}  ${$('#name').value}`);
+ L.push('◆ 今日工作');
+ if(f.leave)L.push(leaveText(f));
+ data.today.filter(hasItem).forEach((r,i)=>L.push(`${i+1}. ${itemText(r)}（${r.p===''?'-':r.p}%）${(r.r||'').trim()?' ─ '+r.r.trim():''}`));
+ const nx=await nextItemsFor($('#date').value);
+ if(nx.items.length){L.push('◆ 預估明日工作');nx.items.forEach((r,i)=>L.push(`${i+1}. ${itemText(r)}（${r.p===''?'-':r.p}%）`))}
+ const add=(t,v)=>{if(v&&String(v).trim())L.push(`◆ ${t}\n${String(v).trim()}`)};
+ [['cust','客戶協定內容'],['budget','預算調整'],['award','專案發包'],['bill','案件請款'],['qa','品質查核紀錄'],['hse','工安查核紀錄'],['abn','異常說明'],['sug','建議事項']].forEach(([k,t])=>add(t,secOut(f,k)));
+ if(!leaveFull(f))L.push(`上班 ${f.tIn||'--:--'} ／ 離廠 ${f.tOut||'--:--'} ／ 下班 ${f.tOff||'--:--'}`);
+ return L.join('\n');
+}
+$('#btnCopy').onclick=async()=>{const t=await textOut();try{await navigator.clipboard.writeText(t);toast('已複製到剪貼簿')}catch(e){prompt('請自行複製：',t)}};
+
+/* ---------- 匯出 / 匯入 ---------- */
+$('#btnJson').onclick=()=>{
+ const blob=new Blob([JSON.stringify({date:$('#date').value,dept:$('#dept').value,name:$('#name').value,...data},null,1)],{type:'application/json'});
+ const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`日報_${$('#name').value||'未填'}_${$('#date').value}.json`;a.click();URL.revokeObjectURL(a.href);
+};
+$('#btnImport').onclick=()=>$('#file').click();
+$('#file').onchange=async e=>{
+ const f=e.target.files[0];if(!f)return;
+ try{const j=JSON.parse(await f.text());
+  if(j.emp&&j.emp!==nas.prof.emp){toast('這個檔案不是你的日報（員工編號不符）');e.target.value='';return}
+  if(j.date){$('#date').value=j.date;const[yy,mm]=j.date.split('-').map(Number);cal.y=yy;cal.m=mm}
+  data=migrate(Object.assign(blank(),{today:j.today,f:j.f}));fill();save();renderCal();loadMonthStatus(cal.y,cal.m);toast('匯入完成')}
+ catch(err){toast('檔案格式不正確')}
+ e.target.value='';
+};
+
+/* ---------- 清空 ---------- */
+$('#btnClear').onclick=()=>{if(confirm('確定清空本日所有內容？')){data=blank();data.f.tIn='08:30';data.f.tOff='17:30';fill();save()}};
+
+/* ---------- 列印版 ---------- */
+$('#btnPrint').onclick=async()=>{await buildPrint();window.print()};
+async function buildPrint(){
+ const f=data.f,N=8;
+ const LT=listItems(data),td=Array.from({length:N},(_,i)=>LT[i]||{t:'',p:'',r:''});
+ const nx=(await nextItemsFor($('#date').value)).items;
+ const tm=Array.from({length:N},(_,i)=>nx[i]||{t:'',p:''});
+ const tt=v=>{if(!v)return '';const[h,m]=v.split(':');return `${+h} 時 ${m} 分`};
+ let rows='';
+ for(let i=0;i<N;i++)rows+=`<tr><td colspan="3">${esc(itemText(td[i]))}</td><td class="c">${td[i].p===''?'':td[i].p+'%'}</td><td colspan="3">${esc(td[i].r)}</td><td colspan="3">${esc(itemText(tm[i]))}</td><td class="c">${tm[i].p===''?'':tm[i].p+'%'}</td></tr>`;
+ const box=(a,b)=>`${a?'☑':'□'}${b}`;
+ $('#print').innerHTML=`<h1>兆聯實業股份有限公司</h1><h2>工作日報表</h2>
+ <table>
+ <tr><td>部門：${esc($('#dept').value)}</td><td colspan="3">填表人：${esc($('#name').value)}</td><td colspan="2">填表日期：${esc($('#date').value)}</td></tr></table>
+ <table>
+ <tr class="h"><td colspan="3">今日工作主要工項</td><td>工項進度(%)</td><td colspan="3">備註(異常說明)</td><td colspan="3">預估明日工作主要工項</td><td>預估進度</td></tr>
+ ${rows}</table>
+ <table>
+ <tr><td class="h" style="width:12%">預算調整</td><td style="width:38%">${esc(secExport(f,'budget'))}</td><td class="h" style="width:12%">品質查核紀錄</td><td>${esc(secExport(f,'qa'))}</td></tr>
+ <tr><td class="h">專案發包</td><td>${esc(secExport(f,'award'))}</td><td class="h">工安查核紀錄</td><td>${esc(secExport(f,'hse'))}</td></tr>
+ <tr><td class="h" rowspan="2">案件請款</td><td rowspan="2">${esc(secExport(f,'bill'))}</td><td class="h">異常說明</td><td>${esc(secExport(f,'abn'))}</td></tr>
+ <tr><td class="h">客戶協定內容</td><td>${esc(secExport(f,'cust'))}</td></tr>
+ <tr><td colspan="2" rowspan="3" style="font-size:10px">填表說明\n1.工作紀錄中的工作內容紀錄必須為實際工作現況(進度)，須按具體時間完整記錄。\n2.如執行多項案件則工程名稱填寫主要案件，其餘於工項進行表列。\n3.重要目標泛指主要進度指標、請款指標等。\n4.內頁及業務人員無需填寫品質工安查核紀錄，品質及試車人員無需填寫工安查核紀錄。\n5.此表於每週呈交區域主管審核後轉由區域文管每月整合後上傳至公司平台備查。</td><td class="h">建議事項</td><td>${esc(secExport(f,'sug'))}</td></tr>
+ <tr><td>上班(入廠)時間</td><td>${tt(f.tIn)}</td></tr>
+ <tr><td>離廠時間：${tt(f.tOut)}</td><td>下班時間：${tt(f.tOff)}</td></tr>
+ </table>`;
+}
+
+/* ---------- NAS（File System Access API） ---------- */
+const nas={root:null,ok:false,supported:'showDirectoryPicker' in window};
+const idb={
+ open(){return new Promise((res,rej)=>{const r=indexedDB.open('dr-nas',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})},
+ async get(k){const db=await this.open();return new Promise((res,rej)=>{const q=db.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})},
+ async set(k,v){const db=await this.open();return new Promise((res,rej)=>{const q=db.transaction('kv','readwrite').objectStore('kv').put(v,k);q.onsuccess=()=>res();q.onerror=()=>rej(q.error)})}
+};
+const safe=s=>s.replace(/[\\/:*?"<>|]/g,'_');
+const sub=(dir,n,create=true)=>dir.getDirectoryHandle(n,{create});
+async function writeFile(dir,name,content){
+ const fh=await dir.getFileHandle(name,{create:true});
+ const w=await fh.createWritable();await w.write(content);await w.close();
+}
+function nasBar(){
+ const msg=$('#nasMsg'),btns=$('#nasBtns');btns.innerHTML='';msg.style.color='';
+ const btn=(t,fn,cls)=>{const b=document.createElement('button');b.textContent=t;if(cls)b.className=cls;b.onclick=fn;btns.appendChild(b)};
+ if(!nas.supported){msg.textContent='⚠ 此瀏覽器不支援直接寫入資料夾，請改用 Chrome 或 Edge。';return}
+ if(!nas.root){msg.textContent='尚未選擇儲存資料夾。請選擇「自己的」個人資料夾（名稱為「編號-姓名」，內有 profile.json）。';btn('選擇 NAS 資料夾',pickRoot,'pri');return}
+ if(!nas.ok){
+  msg.innerHTML=`已記住資料夾「${esc(nas.root.name)}」，需要重新授權才能寫入。${nas.reErr?`<br><span style="color:var(--bad);font-size:13px">自動恢復沒有成功（${esc(nas.reErr)}）。請按右邊「重新選擇資料夾」，選同一個資料夾即可。</span>`:''}`;
+  btn('恢復連線',reconnect,nas.reErr?'':'pri');btn('重新選擇資料夾',pickRoot,nas.reErr?'pri':'');return
+ }
+ if(!nas.prof){msg.innerHTML=`⚠ <b>${esc(nas.root.name)}</b>：${esc(nas.err)}`;msg.style.color='var(--bad)';btn('重新選擇資料夾',pickRoot,'pri');return}
+ msg.style.color='';
+ msg.innerHTML=`✔ 已連線：<b>${esc(nas.root.name)}</b> <span id="nasLast" style="color:var(--mute);font-size:12px"></span>`;
+ btn('立即儲存到 NAS',()=>flushNas(true),'pri');btn('更換資料夾',pickRoot);
+}
+/* 讀取個人資料夾中的 profile.json，鎖定基本資料；沒有或不符就不能填寫 */
+async function applyConnection(){
+ nas.prof=null;nas.err='';
+ if(nas.root&&nas.ok){
+  try{
+   const p=JSON.parse((await (await (await nas.root.getFileHandle('profile.json')).getFile()).text()).replace(/^﻿/,''));
+   if(!p.emp||!p.name||!p.dept)throw new Error('profile.json 缺少 emp / name / dept 欄位');
+   if(!nas.root.name.includes(p.emp)||!nas.root.name.includes(p.name))throw new Error(`資料夾名稱與 profile.json 的人員（${p.emp} ${p.name}）不符，請選自己的資料夾`);
+   nas.prof=p;
+  }catch(e){nas.err=e.name==='NotFoundError'?'資料夾內找不到 profile.json，請確認選的是自己的個人資料夾，或請管理員建立':e.message}
+ }
+ $('#dept').value=nas.prof?.dept||'';$('#emp').value=nas.prof?.emp||'';$('#name').value=nas.prof?.name||'';
+ $('#form').classList.toggle('locked',!nas.prof);
+ ['btnCopy','btnJson','btnImport','btnPrint'].forEach(id=>$('#'+id).disabled=!nas.prof);
+ nasBar();
+ filled={};leaves={};loadedMonths.clear();for(const k in otDay)delete otDay[k];extraHol={};extraWork=new Set();
+ if(nas.prof){
+  try{ /* 選用：個人資料夾內的 holidays.json 可補充公司休假 / 補班日 */
+   const c=JSON.parse((await (await (await nas.root.getFileHandle('holidays.json')).getFile()).text()).replace(/^﻿/,''));
+   extraHol=c.holidays||{};extraWork=new Set(c.workdays||[]);
+  }catch(e){}
+  load($('#date').value);
+  const[yy,mm]=$('#date').value.split('-').map(Number);
+  await loadMonthStatus(mm===1?yy-1:yy,mm===1?12:mm-1); await loadMonthStatus(yy,mm); await ensureOt();refreshUpcoming();
+ }
+ renderCal();
+}
+async function pickRoot(){
+ try{
+  const h=await window.showDirectoryPicker({mode:'readwrite',id:'daily-report'});
+  nas.root=h;nas.ok=true;
+  try{await withTimeout(idb.set('root',h),2000)}catch(e){}   // 記不住資料夾也不影響本次使用
+  await applyConnection();
+  if(nas.prof)toast('已連線：'+nas.prof.name);
+ }catch(e){if(e.name!=='AbortError')toast('無法選擇資料夾：'+e.message)}
+}
+async function reconnect(){
+ nas.reErr='';toast('正在要求資料夾授權…');
+ try{
+  const r=await Promise.race([nas.root.requestPermission({mode:'readwrite'}),new Promise(res=>setTimeout(()=>res('沒有回應'),8000))]);
+  nas.ok=r==='granted';
+  if(!nas.ok)nas.reErr=r==='denied'?'被拒絕':(r==='prompt'?'瀏覽器沒有跳出詢問':r);
+  await applyConnection();
+ }catch(e){nas.reErr=e.message;nasBar()}
+}
+const withTimeout=(p,ms)=>Promise.race([p,new Promise(r=>setTimeout(()=>r(undefined),ms))]);
+async function nasInit(){
+ nasBar();   // 先顯示「選擇資料夾」按鈕，不必等瀏覽器儲存空間回應
+ if(nas.supported){
+  try{
+   nas.root=(await withTimeout(idb.get('root'),2000))||null;
+   if(nas.root)nas.ok=(await withTimeout(nas.root.queryPermission({mode:'readwrite'}),2000))==='granted';
+  }catch(e){}
+ }
+ await applyConnection();
+}
+/* 任何未預期的錯誤都顯示在 NAS 卡片，方便回報 */
+function showFatal(m){const el=$('#nasMsg');if(el){el.style.color='var(--bad)';el.textContent='⚠ 程式錯誤：'+m+'（請截圖回報）'}}
+window.addEventListener('error',e=>showFatal(e.message));
+window.addEventListener('unhandledrejection',e=>showFatal((e.reason&&e.reason.message)||String(e.reason)));
+function nasPath(d){const[y,m,dd]=d.split('-');return{y,month:+m+'月',file:m+dd+'.json',sheet:m+dd,mm:+m}}
+async function nasRead(d){
+ const p=nasPath(d);
+ try{
+  const dir=await sub(await sub(await sub(nas.root,p.y,false),p.month,false),'_資料',false);
+  const f=await (await dir.getFileHandle(p.file)).getFile();
+  return JSON.parse(await f.text());
+ }catch(e){if(e.name==='NotFoundError')return null;throw e}
+}
+async function nasLatestBefore(cur){
+ let[y,m]=cur.split('-').map(Number),best=null;
+ for(let k=0;k<3&&!best;k++){
+  try{
+   const dir=await sub(await sub(await sub(nas.root,String(y),false),m+'月',false),'_資料',false);
+   for await(const[n]of dir.entries()){
+    const mt=n.match(/^(\d\d)(\d\d)\.json$/);if(!mt)continue;
+    const d=`${y}-${mt[1]}-${mt[2]}`;if(d<cur&&(!best||d>best))best=d;
+   }
+  }catch(e){}
+  m--;if(m<1){m=12;y--}
+ }
+ return best;
+}
+let nasT=null,nasQ=Promise.resolve();
+function scheduleNas(){
+ if(!nasReady())return;
+ clearTimeout(nasT);nasT=setTimeout(()=>flushNas(false),2500);
+}
+function flushNas(manual){
+ clearTimeout(nasT);nasT=null;
+ if(!nasReady()||!$('#date').value)return;
+ const snap={d:$('#date').value,dept:nas.prof.dept,emp:nas.prof.emp,name:nas.prof.name,data:JSON.parse(JSON.stringify(data))};
+ nasQ=nasQ.then(()=>nasWrite(snap)).then(msg=>{
+  const el=$('#nasLast');if(el){el.textContent=msg+' '+new Date().toLocaleTimeString('zh-TW',{hour12:false});el.style.color=msg.startsWith('⚠')?'var(--bad)':'var(--ok)'}
+  if(manual)toast(msg);
+ }).catch(e=>{
+  const el=$('#nasLast');if(el){el.textContent='⚠ NAS 寫入失敗：'+e.message;el.style.color='var(--bad)'}
+  if(e.name==='NotAllowedError'){nas.ok=false;nasBar()}
+  if(manual)toast('NAS 寫入失敗：'+e.message);
+ });
+}
+async function nasWrite(s){
+ const p=nasPath(s.d);
+ const monthDir=await sub(await sub(nas.root,p.y),p.month);
+ const jd=await sub(monthDir,'_資料');
+ await writeFile(jd,p.file,JSON.stringify({date:s.d,dept:s.dept,emp:s.emp,name:s.name,...s.data}));
+ if(!window.ExcelJS)return '⚠ 已存 JSON（Excel 元件未載入）';
+ s.next=(await nextItemsFor(s.d)).items;
+ const msg=await writeXlsx(s);
+ /* 前一個上班日的「預估明日」欄位要跟著更新成這一天的工項 */
+ try{
+  const pdte=prevWorkday(s.d),pj=await nasRead(pdte);
+  if(pj)await writeXlsx({d:pdte,dept:s.dept,emp:s.emp,name:s.name,data:migrate(pj),next:itemsOf(s.data)});
+ }catch(e){}
+ return msg;
+}
+async function writeXlsx(s){
+ const p=nasPath(s.d);
+ const monthDir=await sub(await sub(nas.root,p.y),p.month);
+ const fn=`日報表-${s.emp?s.emp+'-':''}${safe(s.name)}-${p.mm}月.xlsx`;
+ const wb=new ExcelJS.Workbook();
+ let existing=null;
+ try{existing=await (await monthDir.getFileHandle(fn)).getFile()}catch(e){if(e.name!=='NotFoundError')throw e}
+ if(existing){
+  try{await wb.xlsx.load(await existing.arrayBuffer())}
+  catch(e){return '⚠ 已存 JSON；月報 Excel 讀取失敗，未覆寫（'+e.message+'）'}
+ }
+ buildSheet(wb,p.sheet,s);
+ wb.worksheets.forEach(ws=>{const n=parseInt(ws.name,10);if(!isNaN(n))ws.orderNo=n});
+ const buf=await wb.xlsx.writeBuffer();
+ try{await writeFile(monthDir,fn,buf)}
+ catch(e){return '⚠ 已存 JSON；Excel 檔可能被開啟中，關閉後再按「立即儲存」'}
+ return '✔ 已存到 NAS（JSON + Excel）';
+}
+function buildSheet(wb,name,s){
+ const old=wb.getWorksheet(name);if(old)wb.removeWorksheet(old.id);
+ const ws=wb.addWorksheet(name,{pageSetup:{paperSize:9,orientation:'portrait',fitToPage:true,fitToWidth:1,fitToHeight:1,margins:{left:.4,right:.4,top:.5,bottom:.5,header:.3,footer:.3}}});
+ [14,12,12,12,14,12,12,14,14,12,10].forEach((w,i)=>ws.getColumn(i+1).width=w);
+ const f=s.data.f;
+ const put=(addr,val,o={})=>{
+  const[a,b]=addr.split(':');if(b)ws.mergeCells(addr);
+  const c=ws.getCell(a);c.value=val;
+  c.alignment={wrapText:true,vertical:o.top?'top':'middle',horizontal:o.left?'left':(o.center===false?undefined:'center')};
+  if(o.bold)c.font={name:'Microsoft JhengHei',size:o.size||11,bold:true};
+  if(o.fmt)c.numFmt=o.fmt;if(o.fill)c.fill={type:'pattern',pattern:'solid',fgColor:{argb:o.fill}};
+ };
+ const[Y,M,D]=s.d.split('-').map(Number);
+ const hm=v=>{if(!v)return '                    時                    分';const[h,m]=v.split(':');return `       ${+h}       時       ${m}       分`};
+ const box=b=>b?'■':'□';
+ put('A1:K1','兆聯實業股份有限公司',{bold:true,size:16});ws.getRow(1).height=26;
+ put('A2:K2','工作日報表',{bold:true,size:14});ws.getRow(2).height=22;
+ put('A3','部門:');put('B3:C3',s.dept);put('D3','填表人:');put('E3:F3',s.name);put('G3','填表日期:');
+ put('H3:K3',new Date(Date.UTC(Y,M-1,D)),{fmt:'yyyy/m/d'});
+ const G='FFEFEFEF';
+ put('A4:C4','今日工作主要工項',{bold:true,fill:G});put('D4','工項進度(%)',{bold:true,fill:G});put('E4:G4','備註(異常說明)',{bold:true,fill:G});
+ put('H4:J4','預估明日工作主要工項',{bold:true,fill:G});put('K4','預估進度',{bold:true,fill:G});
+ const T=listItems(s.data);
+ for(let i=0;i<8;i++){
+  const r=5+i,t=T[i]||{},u=(s.next||[])[i]||{};
+  put(`A${r}:C${r}`,itemText(t),{left:true});
+  put(`D${r}`,t.p===''||t.p==null?'':t.p/100,{fmt:'0%'});
+  put(`E${r}:G${r}`,t.r||'',{left:true});
+  put(`H${r}:J${r}`,itemText(u),{left:true});
+  put(`K${r}`,u.p===''||u.p==null?'':u.p/100,{fmt:'0%'});
+ }
+ put('A13:A15','預算調整',{bold:true,fill:G});
+ const budTxt=secExport(f,'budget');
+ put('B13:D15',budTxt,{left:true,top:true});
+ put('E13:E15','品質\n查核紀錄',{bold:true,fill:G});put('F13:K15',secExport(f,'qa'),{left:true,top:true});
+ put('A16:A20','專案發包',{bold:true,fill:G});
+ put('B16:D20',secExport(f,'award'),{left:true,top:true});
+ put('E16:E17','工安\n查核紀錄',{bold:true,fill:G});put('F16:K17',secExport(f,'hse'),{left:true,top:true});
+ put('E18:E20','異常說明',{bold:true,fill:G});put('F18:K20',secExport(f,'abn'),{left:true,top:true});
+ put('A21:A23','案件請款',{bold:true,fill:G});
+ put('B21:D23',secExport(f,'bill'),{left:true,top:true});
+ put('E21:E22','客戶協定\n內容',{bold:true,fill:G});put('F21:K22',secExport(f,'cust'),{left:true,top:true});
+ put('E23','建議事項',{bold:true,fill:G});put('F23:K23',secExport(f,'sug'),{left:true,top:true});
+ put('A24:G24','填    表    說    明',{bold:true,fill:G});
+ ['1.工作紀錄中的工作內容紀錄必須為實際工作現況(進度)，須按具體時間完整記錄。','2. 如執行多項案件則工程名稱填寫主要案件，其餘於工項進行表列。','3.重要目標泛指主要進度指標、請款指標等，如專案類則為完工期程或驗收期程，品管類則為文件送審期程等。','4. 內頁及業務人員無需填寫品質工安查核紀錄，品質及試車人員無需填寫工安查核紀錄。','5. 此表於每週呈交區域主管審核後轉由區域文管每月整合後上傳至公司平台備查。']
+  .forEach((t,i)=>{put(`A${25+i}:G${25+i}`,t,{left:true});ws.getRow(25+i).height=28});
+ put('I24:J24','上班(入廠)時間:',{left:true});put('I25:J25',hm(leaveFull(s.data.f)?'':s.data.f.tIn),{left:true});
+ put('I26:J26','離廠時間:',{left:true});put('I27:J27',hm(leaveFull(s.data.f)?'':s.data.f.tOut),{left:true});
+ put('I28:J28','下班時間:',{left:true});put('I29:J29',hm(leaveFull(s.data.f)?'':s.data.f.tOff),{left:true});
+ [5,6,7,8,9,10,11,12].forEach(r=>ws.getRow(r).height=22);
+ [13,14,15,16,17,18,19,20,21,22,23].forEach(r=>ws.getRow(r).height=24);
+ /* 多筆預算調整 / 專案發包 / 案件請款時，依文字量加高該區塊的列 */
+ const fit=(rows,txt)=>{
+  const lines=txt.split('\n').reduce((n,l)=>n+Math.max(1,Math.ceil(l.length/30)),0);
+  const h=Math.ceil(lines*16/rows.length);
+  rows.forEach(r=>{if(h>ws.getRow(r).height)ws.getRow(r).height=h});
+ };
+ fit([13,14,15],budTxt);fit([16,17,18,19,20],secExport(f,'award'));fit([21,22,23],secExport(f,'bill'));
+ const th={style:'thin',color:{argb:'FF000000'}};
+ for(let r=1;r<=29;r++)for(let c=1;c<=11;c++)ws.getCell(r,c).border={top:th,left:th,bottom:th,right:th};
+ ws.eachRow(row=>row.eachCell(c=>{if(!c.font||!c.font.name)c.font=Object.assign({name:'Microsoft JhengHei',size:11},c.font||{})}));
+}
+
+/* ---------- 客戶協定附件（存到 NAS：年\月\_附件\MMDD\） ---------- */
+const fmtSize=n=>n>=1048576?(n/1048576).toFixed(1)+' MB':Math.max(1,Math.round(n/1024))+' KB';
+const fileExists=async(dir,n)=>{try{await dir.getFileHandle(n);return true}catch(e){return false}};
+async function attDir(d,create){const p=nasPath(d);return sub(await sub(await sub(await sub(nas.root,p.y,create),p.month,create),'_附件',create),p.sheet,create)}
+function renderAtt(){
+ const ul=$('#attList');if(!ul)return;
+ const a=data.f.att||[];
+ ul.innerHTML=a.map((x,i)=>`<li><a data-open="${i}" title="開啟">📄 ${esc(x.name)}</a><span>${fmtSize(x.size||0)}</span><button type="button" data-rmatt="${i}" title="移除">✕</button></li>`).join('');
+}
+/* 把檔案寫進 _附件\MMDD\[子資料夾]，回傳實際存入的檔名與大小 */
+async function storeFiles(files,subName){
+ const d=$('#date').value,saved=[];
+ let dir=await attDir(d,true);if(subName)dir=await sub(dir,subName,true);
+ for(const f of files){
+  if(f.size>100*1048576){toast(`${f.name} 超過 100 MB，未上傳`);continue}
+  let name=safe(f.name),base=name,ext='';const m=name.match(/^(.*?)(\.[^.]*)$/);if(m){base=m[1];ext=m[2]}
+  for(let k=1;await fileExists(dir,name);)name=`${base} (${++k})${ext}`;
+  await writeFile(dir,name,f);
+  saved.push({name,size:f.size,at:Date.now()});
+ }
+ return{d,saved};
+}
+async function openStored(subName,name){
+ try{
+  let dir=await attDir($('#date').value,false);if(subName)dir=await sub(dir,subName,false);
+  const f=await(await dir.getFileHandle(name)).getFile();const u=URL.createObjectURL(f);window.open(u,'_blank');setTimeout(()=>URL.revokeObjectURL(u),60000);
+ }catch(err){toast('找不到檔案：'+name)}
+}
+async function addFiles(files){
+ if(!nasReady())return;
+ let r;try{r=await storeFiles(files)}catch(e){toast('附件上傳失敗：'+e.message);return}
+ if(r.d!==$('#date').value||!r.saved.length)return;
+ (data.f.att=data.f.att||[]).push(...r.saved);
+ save();renderAtt();markDots();toast(`已存入 NAS：${r.saved.length} 個附件`);
+}
+/* 預算調整的「異常批註單」：依規定須先有批註單才可進行預算調整，存到 _附件\MMDD\異常批註單\ */
+const BUD_SUB='異常批註單';
+let budTarget=-1;
+async function addBudgetFiles(i,files){
+ if(!nasReady()||!files.length)return;
+ let r;try{r=await storeFiles(files,BUD_SUB)}catch(e){toast('批註單上傳失敗：'+e.message);return}
+ if(r.d!==$('#date').value||!r.saved.length)return;
+ const e=data.f.budgets[i];if(!e)return;
+ (e.files=e.files||[]).push(...r.saved);
+ save();renderMulti('budget');markDots();toast(`已存入 NAS：${r.saved.length} 份異常批註單`);
+}
+document.addEventListener('click',async e=>{
+ const pick=e.target.closest('[data-bpick]');
+ if(pick){budTarget=+pick.dataset.bpick;$('#bFile').click();return}
+ const op=e.target.closest('[data-bopen]');
+ if(op){const[i,j]=op.dataset.bopen.split(':').map(Number);openStored(BUD_SUB,data.f.budgets[i].files[j].name);return}
+ const rm=e.target.closest('[data-brm]');
+ if(rm){
+  const[i,j]=rm.dataset.brm.split(':').map(Number),fl=data.f.budgets[i].files[j];
+  if(!confirm(`要移除異常批註單「${fl.name}」嗎？\nNAS 上的這個檔案也會一併刪除。`))return;
+  try{await(await sub(await attDir($('#date').value,false),BUD_SUB,false)).removeEntry(fl.name)}catch(err){if(err.name!=='NotFoundError'){toast('刪除失敗：'+err.message);return}}
+  data.f.budgets[i].files.splice(j,1);save();renderMulti('budget');markDots();
+ }
+});
+$('#bFile').onchange=e=>{addBudgetFiles(budTarget,[...e.target.files]);e.target.value=''};
+['dragenter','dragover'].forEach(ev=>document.addEventListener(ev,e=>{const z=e.target.closest&&e.target.closest('[data-bdrop]');if(z){e.preventDefault();z.classList.add('over')}}));
+['dragleave','drop'].forEach(ev=>document.addEventListener(ev,e=>{const z=e.target.closest&&e.target.closest('[data-bdrop]');if(z){e.preventDefault();z.classList.remove('over');if(ev==='drop')addBudgetFiles(+z.dataset.bdrop,[...e.dataTransfer.files])}}));
+$('#attBtn').onclick=()=>$('#attFile').click();
+$('#attFile').onchange=e=>{addFiles([...e.target.files]);e.target.value=''};
+const drop=$('#attDrop');
+['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('over')}));
+['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove('over')}));
+drop.addEventListener('drop',e=>addFiles([...e.dataTransfer.files]));
+$('#attList').addEventListener('click',async e=>{
+ const o=e.target.closest('[data-open]'),r=e.target.closest('[data-rmatt]');
+ const d=$('#date').value;
+ if(o){
+  const a=data.f.att[+o.dataset.open];
+  try{const f=await(await(await attDir(d,false)).getFileHandle(a.name)).getFile();const u=URL.createObjectURL(f);window.open(u,'_blank');setTimeout(()=>URL.revokeObjectURL(u),60000)}
+  catch(err){toast('找不到檔案：'+a.name)}
+ }else if(r){
+  const i=+r.dataset.rmatt,a=data.f.att[i];
+  if(!confirm(`要從日報移除「${a.name}」嗎？\nNAS 上的這個附件檔也會一併刪除。`))return;
+  try{await(await attDir(d,false)).removeEntry(a.name)}catch(err){if(err.name!=='NotFoundError'){toast('刪除失敗：'+err.message);return}}
+  data.f.att.splice(i,1);if(!data.f.att.length)delete data.f.att;
+  save();renderAtt();markDots();
+ }
+});
+
+/* ---------- 月曆 ---------- */
+/* 國定假日與補班日：依人事行政總處公告整理，請以公司行事曆為準；
+   個人資料夾放 holidays.json（{"holidays":{"2026-12-24":"公司休"},"workdays":["2026-02-07"]}）可補充 */
+const HOL={
+ '2026-01-01':'元旦',
+ '2026-02-14':'春節','2026-02-15':'春節','2026-02-16':'除夕','2026-02-17':'春節','2026-02-18':'春節','2026-02-19':'春節','2026-02-20':'春節','2026-02-21':'春節','2026-02-22':'春節',
+ '2026-02-27':'和平紀念日補假','2026-02-28':'和平紀念日',
+ '2026-04-03':'兒童節補假','2026-04-04':'兒童節','2026-04-05':'清明節','2026-04-06':'清明節補假',
+ '2026-05-01':'勞動節','2026-06-19':'端午節','2026-09-25':'中秋節','2026-09-28':'教師節',
+ '2026-10-09':'國慶日補假','2026-10-10':'國慶日','2026-10-25':'光復節','2026-10-26':'光復節補假','2026-12-25':'行憲紀念日'
+};
+const MAKEUP={'2026-02-07':'補班'};
+const WD='日一二三四五六';
+let filled={},leaves={},extraHol={},extraWork=new Set();
+const loadedMonths=new Set();
+const cal={y:0,m:0};
+const parseD=s=>{const[y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d)};
+const fmtD=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const isWork=s=>{if(extraWork.has(s)||MAKEUP[s])return true;if(HOL[s]||extraHol[s])return false;const w=parseD(s).getDay();return w!==0&&w!==6};
+const offName=s=>HOL[s]||extraHol[s]||'';
+const hasContent=j=>(j.today||[]).some(hasItem)||!!(j.f&&j.f.leave);
+async function loadMonthStatus(y,m){
+ const k=`${y}-${m}`;if(loadedMonths.has(k)||!nasReady())return;
+ loadedMonths.add(k);
+ try{
+  const dir=await sub(await sub(await sub(nas.root,String(y),false),m+'月',false),'_資料',false);
+  const jobs=[];
+  for await(const[n,h]of dir.entries()){
+   const mt=n.match(/^(\d\d)(\d\d)\.json$/);if(!mt||h.kind!=='file')continue;
+   const d=`${y}-${mt[1]}-${mt[2]}`;
+   jobs.push((async()=>{try{const j=JSON.parse((await (await h.getFile()).text()).replace(/^\uFEFF/,''));filled[d]=hasContent(j);leaves[d]=leaveShort(j.f);otDay[d]=otHours(j.f,d)}catch(e){}})());
+  }
+  await Promise.all(jobs);
+ }catch(e){}
+ renderCal();renderOt();scheduleUp();
+}
+function computeWarn(){
+ const today=new Date();today.setHours(0,0,0,0);
+ const first=Object.keys(filled).filter(k=>filled[k]).sort()[0];
+ let start=nas.prof&&nas.prof.start||first;if(!start)return{late:[],pend:[]};
+ const floor=new Date(today.getFullYear(),today.getMonth()-1,1);   // 只檢查上個月 1 日起
+ let s0=parseD(start);if(s0<floor)s0=floor;
+ const late=[],pend=[];
+ for(const d=new Date(s0);d<today;d.setDate(d.getDate()+1)){
+  const s=fmtD(d);if(!isWork(s)||filled[s])continue;
+  (Math.round((today-d)/864e5)>3?late:pend).push(s);
+ }
+ return{late,pend};
+}
+function renderCal(){
+ if(!cal.y)return;
+ const sel=$('#date').value,ts=todayStr(),{late,pend}=computeWarn();
+ const lateS=new Set(late),pendS=new Set(pend);
+ $('#calTitle').textContent=`${cal.y} 年 ${cal.m} 月`;
+ if(sel){const d=parseD(sel);$('#calSel').textContent=`目前填寫：${sel.replace(/-/g,'/')}（週${WD[d.getDay()]}）${isWork(sel)?'':'・假日加班/補填'}`}
+ let h=[...WD].map((c,i)=>`<div class="wd${i%6===0?' we':''}">${c}</div>`).join('');
+ const first=new Date(cal.y,cal.m-1,1),days=new Date(cal.y,cal.m,0).getDate();
+ h+='<div class="blank"></div>'.repeat(first.getDay());
+ for(let i=1;i<=days;i++){
+  const s=`${cal.y}-${pad(cal.m)}-${pad(i)}`,work=isWork(s),f=!!filled[s];
+  let cls='day',note='';
+  if(leaves[s]){cls+=' leave';note=leaves[s]}
+  else if(f&&s>ts){cls+=' plan';note='預填'}
+  else if(f){cls+=' done';note='已填'}
+  else if(lateS.has(s)){cls+=' late';note='逾期'}
+  else if(pendS.has(s)){cls+=' pend';note='待補'}
+  else if(!work){cls+=' off';note=offName(s)||'休'}
+  if(!work&&f)note='加班';
+  if(s>ts)cls+=' fut';
+  if(s===ts)cls+=' today';
+  if(s===sel)cls+=' sel';
+  h+=`<button class="${cls}" data-date="${s}" title="${s}${offName(s)?' '+offName(s):''}"><b>${i}</b><small>${esc(note)}</small></button>`;
+ }
+ $('#calGrid').innerHTML=h;
+ const wb=$('#warnBar'),chip=a=>a.map(s=>`<a data-date="${s}">${+s.slice(5,7)}/${+s.slice(8)}</a>`).join('');
+ if(late.length){wb.className='';wb.innerHTML=`⚠ <b>有 ${late.length} 個上班日超過 3 天未填寫日報</b>，請盡快補填：<br>${chip(late)}${pend.length?`<br><span style="opacity:.85">另有 ${pend.length} 天待補（3 日內）：</span>${chip(pend)}`:''}`}
+ else if(pend.length){wb.className='amber';wb.innerHTML=`有 ${pend.length} 個上班日尚未填寫（3 日內）：${chip(pend)}`}
+ else{wb.className='';wb.innerHTML=''}
+}
+function selectDate(s){
+ if(!s||s===$('#date').value)return;
+ if(nasT)flushNas(false);              // 切換前先把前一天的內容寫進 NAS
+ $('#date').value=s;
+ const[y,m]=s.split('-').map(Number);
+ if(y!==cal.y||m!==cal.m){cal.y=y;cal.m=m;loadMonthStatus(y,m)}
+ renderCal();load(s);ensureOt();
+}
+function gotoMonth(y,m){
+ if(m<1){m=12;y--}if(m>12){m=1;y++}
+ cal.y=y;cal.m=m;renderCal();loadMonthStatus(y,m);
+}
+document.addEventListener('click',e=>{
+ const b=e.target.closest('[data-date]');if(b&&b.closest('#calCard'))selectDate(b.dataset.date);
+});
+$('#calPrev').onclick=()=>gotoMonth(cal.y,cal.m-1);
+$('#calNext').onclick=()=>gotoMonth(cal.y,cal.m+1);
+$('#calToday').onclick=()=>{const t=todayStr(),[y,m]=t.split('-').map(Number);gotoMonth(y,m);selectDate(t)};
+
+/* ---------- 一鍵填入正常上下班（不計加班） ---------- */
+$('#btnNormal').onclick=()=>{
+ data.f.tIn='08:30';data.f.tOff='17:30';
+ $('#tIn').value='08:30';$('#tOff').value='17:30';
+ save();toast('已填入正常上下班 08:30～17:30，本日無加班');
+};
+
+/* ---------- 本日請假（勾選後在視窗記錄假別） ---------- */
+function renderLeave(){
+ const L=data.f.leave,sum=$('#leaveSum');
+ $('#chkLeave').checked=!!L;
+ sum.hidden=!L;sum.innerHTML=L?`${esc(leaveText(data.f))}<a data-leedit>修改</a>`:'';
+ $('#leaveCard').classList.toggle('on',!!L);
+ $('#form').classList.toggle('leave-full',leaveFull(data.f));
+}
+function openLeave(){
+ const L=data.f.leave||{type:'特休',part:'全天',note:''};
+ $('#leType').value=L.type;$('#lePart').value=L.part;$('#leNote').value=L.note||'';
+ $('#leaveDlg').showModal();
+}
+$('#chkLeave').onchange=e=>{
+ if(e.target.checked)openLeave();
+ else{delete data.f.leave;renderLeave();save()}
+};
+document.addEventListener('click',e=>{if(e.target.closest('[data-leedit]'))openLeave()});
+$('#leOk').onclick=()=>{
+ data.f.leave={type:$('#leType').value,part:$('#lePart').value,note:$('#leNote').value.trim()};
+ $('#leaveDlg').close();renderLeave();save();
+};
+$('#leCancel').onclick=()=>{$('#leaveDlg').close();renderLeave()};   // 取消：維持原本狀態（新勾選的會還原成未勾）
+$('#leaveDlg').addEventListener('cancel',()=>setTimeout(renderLeave));
+/* ---------- 加班統計 ----------
+   工作時間：08:30～12:00、13:00～17:30；午休 12:00～13:00、晚休 17:30～18:00 都不計工時。
+   也就是 08:30 之前、18:00 之後的在廠時間算加班（假日出勤則全部時數扣除休息時段後算加班）。
+   計算期間：每月 21 日～次月 20 日。累計超出 46 / 60 / 80 / 100 小時分別以不同顏色提醒，80 以上跳出警告。 */
+const OT_START=8*60+30,OT_END=18*60,OT_BREAKS=[[12*60,13*60],[17*60+30,18*60]];
+const OT_LV=[[100,4],[80,3],[60,2],[46,1]];
+const OT_TXT={1:'已超出 46 小時',2:'已超出 60 小時',3:'已超出 80 小時',4:'已超出 100 小時'};
+const OT_RULE='08:30～12:00、13:00～17:30 為工作時間；17:30～18:00 晚休不計，18:00 後算加班';
+const otDay={};let otState=null;
+const tmin=t=>{const[h,m]=String(t).split(':').map(Number);return h*60+m};
+const fmtH=h=>{const m=Math.round(h*60);return m%60?`${Math.floor(m/60)} 小時 ${m%60} 分`:`${m/60} 小時`};
+const ovl=(a,b,x,y)=>Math.max(0,Math.min(b,y)-Math.max(a,x));
+function otHours(f,d){
+ if(!f||!f.tIn||!f.tOff||leaveFull(f))return 0;
+ const a=tmin(f.tIn),b=tmin(f.tOff);if(isNaN(a)||isNaN(b)||b<=a)return 0;
+ const min=isWork(d)
+  ?ovl(a,b,-Infinity,OT_START)+ovl(a,b,OT_END,Infinity)                       // 上班日：08:30 前 + 18:00 後
+  :(b-a)-OT_BREAKS.reduce((n,[x,y])=>n+ovl(a,b,x,y),0);                       // 假日出勤：全部時數扣掉休息時段
+ return Math.max(0,min)/60;
+}
+function otPeriod(d){
+ const[y,m,dd]=d.split('-').map(Number);let sy=y,sm=m;
+ if(dd<21){sm--;if(sm<1){sm=12;sy--}}
+ let ey=sy,em=sm+1;if(em>12){em=1;ey++}
+ return{start:`${sy}-${pad(sm)}-21`,end:`${ey}-${pad(em)}-20`,months:[[sy,sm],[ey,em]]};
+}
+async function ensureOt(){
+ if(!nasReady())return;
+ const p=otPeriod($('#date').value);
+ for(const[y,m]of p.months)await loadMonthStatus(y,m);
+ renderOt();
+}
+function renderOt(){
+ const box=$('#otBox'),td=$('#otToday');if(!box||!nasReady()){if(box)box.innerHTML='';return}
+ const d=$('#date').value,p=otPeriod(d);
+ otDay[d]=otHours(data.f,d);
+ td.textContent=otDay[d]>0?`本日加班：${fmtH(otDay[d])}（${OT_RULE}）`:`本日無加班（${OT_RULE}）`;
+ let total=0,days=0;
+ for(const k of Object.keys(otDay))if(k>=p.start&&k<=p.end&&otDay[k]>0){total+=otDay[k];days++}
+ const lv=(OT_LV.find(([t])=>total>t)||[0,0])[1],MAX=110,pct=Math.min(100,total/MAX*100);
+ const next=[46,60,80,100].find(t=>total<=t);
+ const s=x=>`${+x.slice(5,7)}/${+x.slice(8)}`;
+ box.className='ot'+lv;
+ box.innerHTML=`<div class="otHead"><span>📊 加班統計 <b style="font-size:13px">${s(p.start)}～${s(p.end)}</b></span><span>累計 <b>${Math.round(total*10)/10}</b> 小時（${days} 天）</span>${lv?`<span class="otTag">${OT_TXT[lv]}</span>`:'<span class="otTag">正常</span>'}</div>
+  <div class="otBar"><div class="otFill" style="width:${pct}%"></div>${[46,60,80,100].map(t=>`<div class="otTick" style="left:${t/MAX*100}%"><span>${t}</span></div>`).join('')}</div>
+  <div class="note">${next?`距離 ${next} 小時還有 ${Math.round((next-total)*10)/10} 小時。`:'已超出所有提醒門檻。'}</div>`;
+ otState={total,days,lv,p,next};
+ renderAlerts();
+ if(lv>=3)otWarn(total,lv,p);
+}
+function otWarn(total,lv,p){
+ const k=`dr:otwarn:${nas.prof.emp}:${p.end}:${lv}:${todayStr()}`;
+ if(ls.get(k)||document.querySelector('dialog[open]'))return;
+ ls.set(k,'1');
+ $('#otDlgT').textContent=lv>=4?'🚨 加班時數已超出 100 小時':'⚠ 加班時數已超出 80 小時';
+ $('#otDlgB').innerHTML=`本期（${p.start.slice(5).replace('-','/')}～${p.end.slice(5).replace('-','/')}）加班已累計 <b>${Math.round(total*10)/10} 小時</b>。<br>請留意加班上限，並與主管確認後續工時安排。`;
+ $('#otDlg').showModal();
+}
+$('#otOk').onclick=()=>$('#otDlg').close();
+/* ---------- 提醒與警示（置頂）：加班時數、逾期未填、未來一週工項 ---------- */
+const upCache={rows:null};
+let upT=null;
+const scheduleUp=()=>{clearTimeout(upT);upT=setTimeout(refreshUpcoming,1200)};
+async function refreshUpcoming(){
+ if(!nasReady())return;
+ const base=parseD(todayStr()),rows=[];
+ for(let i=1;i<=7;i++){
+  const d=new Date(base);d.setDate(d.getDate()+i);const s=fmtD(d);
+  const dd=await loadDay(s);
+  rows.push({s,work:isWork(s),name:offName(s),leave:dd.f&&dd.f.leave?leaveText(dd.f):'',items:(dd.today||[]).filter(hasItem)});
+ }
+ upCache.rows=rows;renderAlerts();
+}
+function renderAlerts(){
+ const card=$('#alertCard');if(!card)return;
+ if(!nasReady()){card.hidden=true;return}
+ card.hidden=false;
+ const s=x=>`${+x.slice(5,7)}/${+x.slice(8)}`;
+ // 加班
+ const o=otState,ot=$('#alOt');
+ if(o){
+  const gap=o.next?`，距離 ${o.next} 小時還有 ${Math.round((o.next-o.total)*10)/10} 小時`:'';
+  const near=o.next&&o.next-o.total<=5&&o.lv<4;
+  ot.className='alrow ot'+o.lv+(near&&o.lv===0?' ot1':'');
+  ot.innerHTML=`<span>📊 本期加班（${s(o.p.start)}～${s(o.p.end)}）</span><b>${Math.round(o.total*10)/10} 小時</b>${o.lv?`<span class="otTag">${OT_TXT[o.lv]}</span>`:'<span class="otTag">正常</span>'}<span class="alnote">${near?'⚠ 即將超出 '+o.next+' 小時':''}${gap}</span>`;
+ }else ot.innerHTML='';
+ // 未來一週
+ const up=$('#alUp'),R=upCache.rows;
+ if(!R){up.innerHTML='';return}
+ const nxt=nextWorkday(todayStr()),nr=R.find(r=>r.s===nxt);
+ const chip=r=>`<a data-goto="${r.s}">${s(r.s)}（週${WD[parseD(r.s).getDay()]}）</a>`;
+ const lines=R.filter(r=>r.items.length||r.leave||r.work).map(r=>{
+  const body=r.leave?`<span class="lv">${esc(r.leave)}</span>`:'';
+  const it=r.items.map(x=>`${esc(itemText(x))}${x.p!==''&&x.p!=null?`<i>（${x.p}%）</i>`:''}`).join('、');
+  const empty=!r.items.length&&!r.leave;
+  return`<div class="upl${empty?' empty':''}">${chip(r)}<span>${body}${it||(empty?'尚未安排工項':'')}${!r.work&&r.items.length?' <em>（假日）</em>':''}</span></div>`;
+ }).join('');
+ const warn=nr&&!nr.items.length&&!nr.leave?`<div class="upwarn">⚠ 下一個上班日 ${chip(nr)} 尚未預排工項，可先安排（也能用「預排多日工項」一次排多天）。</div>`:'';
+ up.innerHTML=`<div class="uph">📅 未來一週工項（${s(R[0].s)}～${s(R[6].s)}）</div>${warn}${lines||'<div class="upl empty"><span>這一週沒有上班日</span></div>'}`;
+}
+/* ---------- 預排多日工項 ---------- */
+const plDlg=$('#planDlg'),pl={sel:new Set(),y:0,m:0,last:null};
+function planRows(){
+ const days=[...pl.sel].sort(),N=days.length;
+ const p0=Math.max(0,Math.min(100,+$('#plP0').value||0)),p1=Math.max(0,Math.min(100,+$('#plP1').value||0));
+ return days.map((x,i)=>({s:x,p:Math.round(p0+(p1-p0)*(i+1)/N)}));
+}
+function planCal(){
+ $('#plTitle').textContent=`${pl.y} 年 ${pl.m} 月`;
+ let h=[...WD].map((c,i)=>`<div class="wd${i%6===0?' we':''}">${c}</div>`).join('');
+ const first=new Date(pl.y,pl.m-1,1),days=new Date(pl.y,pl.m,0).getDate();
+ h+='<div class="blank"></div>'.repeat(first.getDay());
+ for(let i=1;i<=days;i++){
+  const s=`${pl.y}-${pad(pl.m)}-${pad(i)}`,work=isWork(s);
+  h+=`<button type="button" class="day${work?'':' off'}${pl.sel.has(s)?' pick':''}" data-pl="${s}"><b>${i}</b><small>${pl.sel.has(s)?'✓':(offName(s)||(work?'':'休'))}</small></button>`;
+ }
+ $('#plCal').innerHTML=h;
+}
+function planRender(){
+ planCal();
+ const R=planRows(),ok=R.length&&$('#plT').value.trim()+$('#plC').value.trim()!=='';
+ $('#plPrev').innerHTML=R.length?R.map(r=>`<div class="${isWork(r.s)?'':'we'}"><span>${+r.s.slice(5,7)}/${+r.s.slice(8)}（週${WD[parseD(r.s).getDay()]}）${offName(r.s)?' '+esc(offName(r.s)):''}${isWork(r.s)?'':'・假日加班'}</span><b>${r.p}%</b></div>`).join('')+`<div class="sum"><span>共 ${R.length} 天</span><span></span></div>`:'';
+ $('#plOk').disabled=!ok;$('#plOk').textContent=R.length?`排入 ${R.length} 天`:'排入';
+}
+$('#btnPlan').onclick=()=>{
+ if(!nasReady())return;
+ const s=nextWorkday($('#date').value||todayStr());
+ [pl.y,pl.m]=s.split('-').map(Number);pl.sel=new Set([s]);pl.last=s;
+ $('#plC').value='';$('#plT').value='';$('#plP0').value=0;$('#plP1').value=100;
+ planRender();plDlg.showModal();
+};
+$('#plCal').addEventListener('click',e=>{
+ const b=e.target.closest('[data-pl]');if(!b)return;
+ const s=b.dataset.pl;
+ if(e.shiftKey&&pl.last){
+  const[a,z]=pl.last<s?[pl.last,s]:[s,pl.last];
+  for(const d=parseD(a);fmtD(d)<=z;d.setDate(d.getDate()+1)){const x=fmtD(d);if(isWork(x))pl.sel.add(x)}
+  pl.sel.add(s);
+ }else if(pl.sel.has(s))pl.sel.delete(s);else pl.sel.add(s);
+ pl.last=s;planRender();
+});
+$('#plPrevM').onclick=()=>{pl.m--;if(pl.m<1){pl.m=12;pl.y--}planRender()};
+$('#plNextM').onclick=()=>{pl.m++;if(pl.m>12){pl.m=1;pl.y++}planRender()};
+$('#plClear').onclick=()=>{pl.sel.clear();pl.last=null;planRender()};
+['plC','plT','plP0','plP1'].forEach(id=>$('#'+id).addEventListener('input',planRender));
+$('#plCancel').onclick=()=>plDlg.close();$('#plOk').onclick=async()=>{
+ const c=$('#plC').value.trim(),t=$('#plT').value.trim(),R=planRows();if(!R.length)return;
+ const it=itemText({c,t});plDlg.close();
+ const cur=$('#date').value;let n=0;
+ for(const{s,p}of R){
+  const isCur=s===cur,dd=isCur?data:await loadDay(s);
+  const hit=dd.today.find(x=>hasItem(x)&&itemText(x)===it);
+  if(hit)hit.p=p;
+  else{const em=dd.today.find(x=>!hasItem(x));if(em){em.c=c;em.t=t;em.p=p}else dd.today.push({c,t,p,r:''})}
+  if(isCur){renderRows();save()}
+  else{
+   dd.savedAt=Date.now();ls.set(key(s),JSON.stringify(dd));filled[s]=true;
+   nasQ=nasQ.then(()=>writeDayJson(s,dd)).catch(e=>toast('NAS 寫入失敗：'+e.message));
+  }
+  n++;
+ }
+ flushNas(false);renderCal();updateNextHint();scheduleUp();
+ toast(`已預排「${it}」${R[0].s.slice(5).replace('-','/')}～${R[R.length-1].s.slice(5).replace('-','/')}，共 ${n} 天`);
+};
+
+/* ---------- 匯出月報表（工作日的工作記事 + 當日有填的特殊事項） ---------- */
+const SPECIAL=[['cust','客戶協定內容'],['budget','預算調整'],['award','專案發包'],['bill','案件請款'],['qa','品質查核紀錄'],['hse','工安查核紀錄'],['abn','異常說明'],['sug','建議事項']];
+async function exportMonthly(){
+ if(!nasReady()||!window.ExcelJS){toast('Excel 元件未載入');return}
+ const y=cal.y,m=cal.m,last=new Date(y,m,0).getDate(),ts=todayStr();
+ toast('整理月報表中…');
+ const rows=[];let work=0,done=0,leaveDays=0;
+ for(let i=1;i<=last;i++){
+  const s=`${y}-${pad(m)}-${pad(i)}`,w=isWork(s);
+  const dd=await loadDay(s),has=hasContent(dd);
+  if(!w&&!has)continue;
+  if(w)work++;if(w&&has)done++;if(dd.f.leave)leaveDays+=dd.f.leave.part==='全天'?1:0.5;
+  const items=listItems(dd).map((r,j)=>`${j+1}. ${itemText(r)}${r.p!==''&&r.p!=null?`（${r.p}%）`:''}${(r.r||'').trim()?`　※${r.r.trim()}`:''}`);
+  const sp=SPECIAL.filter(([k])=>secHas(dd.f,k)).map(([k,t])=>`【${t}】\n${secOut(dd.f,k)}`);
+  rows.push({s,w,has,items,sp,future:s>ts});
+ }
+ const wb=new ExcelJS.Workbook(),ws=wb.addWorksheet(`${m}月`,{pageSetup:{paperSize:9,orientation:'landscape',fitToPage:true,fitToWidth:1,fitToHeight:0}});
+ [12,6,64,64].forEach((x,i)=>ws.getColumn(i+1).width=x);
+ const F=(o={})=>Object.assign({name:'Microsoft JhengHei',size:11},o);
+ ws.mergeCells('A1:D1');ws.getCell('A1').value='兆聯實業股份有限公司　工作月報表';ws.getCell('A1').font=F({size:16,bold:true});ws.getCell('A1').alignment={horizontal:'center'};
+ ws.mergeCells('A2:D2');ws.getCell('A2').value=`部門：${nas.prof.dept}　　填表人：${nas.prof.emp} ${nas.prof.name}　　月份：${y} 年 ${m} 月　　上班日 ${work} 天・已填 ${done} 天${work-done?`・未填 ${work-done} 天`:''}${leaveDays?`・請假 ${leaveDays} 天`:''}`;
+ ws.getCell('A2').font=F();ws.getCell('A2').alignment={horizontal:'center'};
+ const hr=ws.getRow(4);['日期','星期','工作記事','特殊事項'].forEach((t,i)=>{const c=hr.getCell(i+1);c.value=t;c.font=F({bold:true});c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFEFEFEF'}};c.alignment={horizontal:'center',vertical:'middle'}});
+ const th={style:'thin',color:{argb:'FF000000'}},bd={top:th,left:th,bottom:th,right:th};
+ for(let c=1;c<=4;c++)hr.getCell(c).border=bd;
+ let r=5;
+ for(const x of rows){
+  const row=ws.getRow(r++),d=parseD(x.s);
+  row.getCell(1).value=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));row.getCell(1).numFmt='m/d';
+  row.getCell(2).value=WD[d.getDay()]+(x.w?'':'*');
+  const memo=x.has?x.items.join('\n'):(x.future?'':'（未填寫）');
+  row.getCell(3).value=memo;row.getCell(4).value=x.sp.join('\n\n');
+  for(let c=1;c<=4;c++){
+   const cell=row.getCell(c);cell.border=bd;cell.font=F(!x.w?{color:{argb:'FF1F5FBF'}}:(!x.has&&!x.future?{color:{argb:'FFC0392B'}}:{}));
+   cell.alignment={wrapText:true,vertical:'top',horizontal:c<=2?'center':'left'};
+  }
+  const lines=Math.max(1,...[memo,x.sp.join('\n\n')].map(t=>t.split('\n').reduce((n,l)=>n+Math.max(1,Math.ceil(l.length/34)),0)));
+  row.height=Math.max(20,lines*16);
+ }
+ ws.getCell(`A${r+1}`).value='＊ 假日出勤（有填寫內容的非上班日）。「特殊事項」僅列出當日實際有填寫的欄位。';ws.getCell(`A${r+1}`).font=F({size:10,color:{argb:'FF6B7685'}});
+ ws.views=[{state:'frozen',ySplit:4}];
+ const buf=await wb.xlsx.writeBuffer(),fn=`月報表-${nas.prof.emp}-${safe(nas.prof.name)}-${m}月.xlsx`;
+ try{
+  const md=await sub(await sub(nas.root,String(y)),m+'月');
+  await writeFile(md,fn,buf);
+  toast(`月報表已存到 NAS：${y}\\${m}月\\${fn}`);
+ }catch(e){
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}));a.download=fn;a.click();URL.revokeObjectURL(a.href);
+  toast('NAS 寫入失敗（'+e.message+'），已改為下載');
+ }
+}
+$('#btnMonthly').onclick=exportMonthly;
+
+/* ---------- 初始化 ---------- */
+(async function init(){
+ $('#date').value=todayStr();
+ [cal.y,cal.m]=todayStr().split('-').map(Number);
+ renderCal();
+ await nasInit();
+})();
+</script>
+</body>
+</html>
