@@ -154,6 +154,17 @@ dialog h3{margin:0 0 8px;font-size:16px}
 .ot0 .otFill{background:#3aa76d}.ot1 .otFill{background:#e3b341}.ot2 .otFill{background:#f08c00}.ot3 .otFill{background:#d64545}.ot4 .otFill{background:#7a1c4d}
 .otTag{display:inline-block;padding:1px 10px;border-radius:12px;font-size:12px;color:#fff;background:#3aa76d}
 .ot1 .otTag{background:#c99a1f}.ot2 .otTag{background:#e07b00}.ot3 .otTag{background:#d64545}.ot4 .otTag{background:#7a1c4d}
+@media (max-width:760px){
+ header.top .bar{width:100%}header.top .bar button{flex:1}
+ .calnav{flex-wrap:wrap}
+ .calnav b{flex:1 1 120px;white-space:nowrap;font-size:15px}
+ .calnav #calPrev,.calnav #calNext{flex:none}
+ .calnav #calToday,.calnav #btnMonthly{flex:1 1 40%}
+ .rt{margin-left:0;width:100%;justify-content:space-between}
+ .card{padding:12px}
+ main{padding:10px}
+}
+.lgrow{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap}.lgrow .f{flex:1;min-width:200px}
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#222;color:#fff;padding:8px 16px;border-radius:20px;font-size:13px;opacity:0;transition:.2s;pointer-events:none}
 .toast.on{opacity:1}
 @media (max-width:760px){
@@ -179,7 +190,7 @@ dialog h3{margin:0 0 8px;font-size:16px}
 </head>
 <body>
 <header class="top">
- <h1>工作日報表 <small>兆聯實業股份有限公司 ・ 自動儲存於本機瀏覽器</small></h1>
+ <h1>工作日報表 <small>兆聯實業股份有限公司 ・ 自動儲存到雲端</small></h1>
  <span class="status" id="status"></span>
  <div class="bar">
   <button id="btnCopy">複製文字</button>
@@ -193,7 +204,7 @@ dialog h3{margin:0 0 8px;font-size:16px}
 
 <main>
  <section class="card nas" id="nasBar">
-  <h2>NAS 儲存位置 <span class="hint">日報會存成 JSON 及月報 Excel</span></h2>
+  <h2>登入 <span class="hint">日報儲存在雲端，由系統定時彙整到公司 NAS</span></h2>
   <div class="bar" style="align-items:center"><span id="nasMsg" style="flex:1;min-width:200px"></span><span id="nasBtns" class="bar"></span></div>
  </section>
 
@@ -205,7 +216,7 @@ dialog h3{margin:0 0 8px;font-size:16px}
   <div id="alUp"></div>
  </section>
  <section class="card">
-  <h2>基本資料 <span class="hint">🔒 由 NAS 個人資料夾的 profile.json 帶入，無法修改</span></h2>
+  <h2>基本資料 <span class="hint">🔒 由登入帳號對應的人員資料帶入，無法修改</span></h2>
   <div class="grid">
    <label class="f">部門<input id="dept" readonly placeholder="連線後自動帶入"></label>
    <label class="f">員工編號<input id="emp" readonly placeholder="連線後自動帶入"></label>
@@ -266,7 +277,7 @@ dialog h3{margin:0 0 8px;font-size:16px}
    <div class="drop" id="attDrop">📎 信件（.msg / .eml）、會議記錄等檔案，可拖曳到這裡，或
     <button type="button" id="attBtn">選擇檔案</button><input type="file" id="attFile" multiple hidden></div>
    <ul id="attList"></ul>
-   <div class="note">檔案會直接存到 NAS 個人資料夾的「年\月\_附件\日期」底下，單檔上限 100 MB。</div>
+   <div class="note">檔案會上傳到雲端（私有空間，只有本人與主管可開啟），單檔上限 50 MB。</div>
   </div>
  </div></details>
 
@@ -321,6 +332,11 @@ dialog h3{margin:0 0 8px;font-size:16px}
  <h3 id="otDlgT">⚠ 加班時數警告</h3>
  <div id="otDlgB" style="line-height:1.7"></div>
  <div class="bar" style="justify-content:flex-end;margin-top:14px"><button type="button" id="otOk" class="pri">我知道了</button></div>
+</dialog><dialog id="pwDlg">
+ <h3>變更密碼</h3>
+ <label class="f">新密碼（至少 8 個字元）<input id="pw1" type="password" autocomplete="new-password"></label>
+ <label class="f" style="margin-top:10px">再輸入一次<input id="pw2" type="password" autocomplete="new-password"></label>
+ <div class="bar" style="justify-content:flex-end;margin-top:12px"><button type="button" id="pwCancel">取消</button><button type="button" id="pwOk" class="pri">變更</button></div>
 </dialog><dialog id="planDlg">
  <h3>預排多日工項</h3>
  <div class="note" style="margin-bottom:10px">例：10/19～10/30 執行配管工程。① 填案號、工作記事與進度範圍；② 在日曆選好要排入的日期，系統會依「開工前進度 → 完成時進度」把預計進度平均分配到每一天。已有相同「案號_工作記事」的日子只會更新進度。</div>
@@ -341,6 +357,8 @@ dialog h3{margin:0 0 8px;font-size:16px}
 <div id="print"></div>
 <div class="toast" id="toast"></div>
 
+<script src="config.js"></script>
+<script src="supabase.min.js"></script>
 <script src="exceljs.min.js"></script>
 <script>
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
@@ -575,7 +593,7 @@ async function load(d){
  {
   try{
    const j=await nasRead(d);
-   if(j&&d===$('#date').value&&(j.savedAt||0)>(data.savedAt||0)){data=migrate(Object.assign(blank(),j));fill();ls.set(key(d),JSON.stringify(data));toast('已從 NAS 載入')}
+   if(j&&d===$('#date').value&&(j.savedAt||0)>(data.savedAt||0)){data=migrate(Object.assign(blank(),j));fill();ls.set(key(d),JSON.stringify(data));toast('已從雲端載入')}
   }catch(e){}
  }
  if(d===$('#date').value){filled[d]=hasContent(data);leaves[d]=leaveShort(data.f);renderCal();renderOt()}
@@ -589,25 +607,21 @@ function stepWorkday(s,dir){
 }
 const nextWorkday=s=>stepWorkday(s,1),prevWorkday=s=>stepWorkday(s,-1);
 const itemsOf=dd=>migrate({today:(dd&&dd.today)||[]}).today.filter(hasItem).map(r=>({c:r.c,t:r.t,p:r.p}));
-/* 下一個上班日已預先填寫的工項（本機草稿與 NAS 取較新者） */
+/* 下一個上班日已預先填寫的工項（本機草稿與雲端取較新者） */
 async function nextItemsFor(d){
  const n=nextWorkday(d);let j=null;
  try{const raw=ls.get(key(n));if(raw)j=JSON.parse(raw)}catch(e){}
  if(nasReady()){try{const nj=await nasRead(n);if(nj&&(!j||(nj.savedAt||0)>(j.savedAt||0)))j=nj}catch(e){}}
  return{date:n,items:itemsOf(j)};
 }
-/* 讀取任一天的完整日報（本機草稿與 NAS 取較新者） */
-async function loadDay(d){
+/* 讀取任一天的完整日報（本機草稿與雲端取較新者） */
+async function loadDay(d,remote){
  let j=null;
  try{const raw=ls.get(key(d));if(raw)j=JSON.parse(raw)}catch(e){}
- if(nasReady()){try{const nj=await nasRead(d);if(nj&&(!j||(nj.savedAt||0)>(j.savedAt||0)))j=nj}catch(e){}}
+ if(nasReady()){try{const nj=remote===undefined?await nasRead(d):remote;if(nj&&(!j||(nj.savedAt||0)>(j.savedAt||0)))j=nj}catch(e){}}
  const dd=migrate(Object.assign(blank(),j||{}));
  if(!j){dd.f.tIn='08:30';dd.f.tOff='17:30';dd.f.tOut=''}
  return dd;
-}
-async function writeDayJson(d,dd){
- const p=nasPath(d),md=await sub(await sub(nas.root,p.y),p.month),jd=await sub(md,'_資料');
- await writeFile(jd,p.file,JSON.stringify({date:d,dept:nas.prof.dept,emp:nas.prof.emp,name:nas.prof.name,...dd}));
 }
 /* 進度未達 100%（含未填進度）的工項，複製到下一個上班日；已存在的工項不重複加入 */
 async function carryToNext(){
@@ -622,7 +636,7 @@ async function carryToNext(){
  const rows=nd.today.filter(hasItem).concat(add);while(rows.length<MIN_ROWS)rows.push(newT());
  nd.today=rows;nd.savedAt=Date.now();
  ls.set(key(n),JSON.stringify(nd));filled[n]=true;
- nasQ=nasQ.then(()=>writeDayJson(n,nd)).catch(e=>toast('NAS 寫入失敗：'+e.message));
+ nasQ=nasQ.then(()=>writeDayJson(n,nd)).catch(e=>toast('雲端寫入失敗：'+e.message));
  flushNas(false);                       // 本日的 Excel「預估明日」欄位一併更新
  renderCal();updateNextHint();scheduleUp();
  const w=`${+n.slice(5,7)}/${+n.slice(8)}（週${WD[parseD(n).getDay()]}）`;
@@ -700,43 +714,73 @@ async function buildPrint(){
  </table>`;
 }
 
-/* ---------- NAS（File System Access API） ---------- */
-const nas={root:null,ok:false,supported:'showDirectoryPicker' in window};
-const idb={
- open(){return new Promise((res,rej)=>{const r=indexedDB.open('dr-nas',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})},
- async get(k){const db=await this.open();return new Promise((res,rej)=>{const q=db.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})},
- async set(k,v){const db=await this.open();return new Promise((res,rej)=>{const q=db.transaction('kv','readwrite').objectStore('kv').put(v,k);q.onsuccess=()=>res();q.onerror=()=>rej(q.error)})}
-};
-const safe=s=>s.replace(/[\\/:*?"<>|]/g,'_');
-const sub=(dir,n,create=true)=>dir.getDirectoryHandle(n,{create});
-async function writeFile(dir,name,content){
- const fh=await dir.getFileHandle(name,{create:true});
- const w=await fh.createWritable();await w.write(content);await w.close();
+/* ---------- 雲端（Supabase）：Email 驗證碼登入 + 資料庫 ----------
+   沿用 nas 這個物件名稱：nas.ok = 已登入、nas.prof = 人員資料（由管理員在 profiles 表建立）。 */
+const CFG=window.APP_CONFIG||{};
+const nas={ok:false,prof:null,session:null,err:''};
+const login={step:'email',email:''};
+let sb=null;
+const safe=s=>String(s).replace(/[\\/:*?"<>|]/g,'_');
+function initClient(){
+ if(!CFG.url||!CFG.key){nas.err='尚未設定雲端連線：請在 config.js 填入 Supabase 的 url 與 key';return false}
+ if(!window.supabase){nas.err='雲端元件（supabase.min.js）沒有載入';return false}
+ sb=window.supabase.createClient(CFG.url,CFG.key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+ return true;
 }
 function nasBar(){
  const msg=$('#nasMsg'),btns=$('#nasBtns');btns.innerHTML='';msg.style.color='';
  const btn=(t,fn,cls)=>{const b=document.createElement('button');b.textContent=t;if(cls)b.className=cls;b.onclick=fn;btns.appendChild(b)};
- if(!nas.supported){msg.textContent='⚠ 此瀏覽器不支援直接寫入資料夾，請改用 Chrome 或 Edge。';return}
- if(!nas.root){msg.textContent='尚未選擇儲存資料夾。請選擇「自己的」個人資料夾（名稱為「編號-姓名」，內有 profile.json）。';btn('選擇 NAS 資料夾',pickRoot,'pri');return}
+ if(!sb){msg.innerHTML=`⚠ ${esc(nas.err||'尚未設定雲端連線')}`;msg.style.color='var(--bad)';return}
  if(!nas.ok){
-  msg.innerHTML=`已記住資料夾「${esc(nas.root.name)}」，需要重新授權才能寫入。${nas.reErr?`<br><span style="color:var(--bad);font-size:13px">自動恢復沒有成功（${esc(nas.reErr)}）。請按右邊「重新選擇資料夾」，選同一個資料夾即可。</span>`:''}`;
-  btn('恢復連線',reconnect,nas.reErr?'':'pri');btn('重新選擇資料夾',pickRoot,nas.reErr?'pri':'');return
+  let saved='';try{saved=localStorage.getItem('dr:lastEmail')||''}catch(e){}
+  msg.innerHTML=`<div class="lgrow"><label class="f">Email<input id="lgEmail" type="email" inputmode="email" autocomplete="username" placeholder="your@company.com" value="${esc(login.email||saved)}"></label><label class="f">密碼<input id="lgPwd" type="password" autocomplete="current-password"></label><button type="button" class="pri" id="lgLogin">登入</button></div><div class="note">帳號與初始密碼由管理員提供；登入後可自行變更密碼，忘記密碼請聯絡管理員重設。</div>`;
+  return;
  }
- if(!nas.prof){msg.innerHTML=`⚠ <b>${esc(nas.root.name)}</b>：${esc(nas.err)}`;msg.style.color='var(--bad)';btn('重新選擇資料夾',pickRoot,'pri');return}
- msg.style.color='';
- msg.innerHTML=`✔ 已連線：<b>${esc(nas.root.name)}</b> <span id="nasLast" style="color:var(--mute);font-size:12px"></span>`;
- btn('立即儲存到 NAS',()=>flushNas(true),'pri');btn('更換資料夾',pickRoot);
+ if(!nas.prof){msg.innerHTML=`⚠ ${esc(nas.err||'讀取人員資料失敗')}<div class="note">登入帳號：${esc(nas.session&&nas.session.user.email||'')}</div>`;msg.style.color='var(--bad)';btn('登出',signOut);return}
+ msg.innerHTML=`✔ 已登入：<b>${esc(nas.prof.name)}</b> <span style="color:var(--mute);font-size:12px">${esc(nas.prof.emp)}・${esc(nas.session.user.email)}</span> <span id="nasLast" style="color:var(--mute);font-size:12px"></span>`;
+ btn('立即儲存',()=>flushNas(true),'pri');btn('變更密碼',openPwd);btn('登出',signOut);
 }
-/* 讀取個人資料夾中的 profile.json，鎖定基本資料；沒有或不符就不能填寫 */
+let loginBusy=false;
+async function doLogin(){
+ if(loginBusy)return;
+ const email=(($('#lgEmail')||{}).value||'').trim().toLowerCase(),password=($('#lgPwd')||{}).value||'';
+ if(!/^\S+@\S+\.\S+$/.test(email)){toast('請輸入正確的 Email');return}
+ if(!password){toast('請輸入密碼');return}
+ login.email=email;loginBusy=true;toast('登入中…');
+ const{error}=await sb.auth.signInWithPassword({email,password});
+ loginBusy=false;
+ if(error){toast(/invalid login/i.test(error.message)?'帳號或密碼不正確':'登入失敗：'+error.message);return}
+ try{localStorage.setItem('dr:lastEmail',email)}catch(e){}   // 成功時由 onAuthStateChange 接手
+}
+async function signOut(){await sb.auth.signOut()}
+function openPwd(){$('#pw1').value='';$('#pw2').value='';$('#pwDlg').showModal()}
+document.addEventListener('click',async e=>{
+ if(e.target.closest('#lgLogin'))doLogin();
+ else if(e.target.closest('#pwCancel'))$('#pwDlg').close();
+ else if(e.target.closest('#pwOk')){
+  const a=$('#pw1').value,b=$('#pw2').value;
+  if(a.length<8){toast('密碼至少 8 個字元');return}
+  if(a!==b){toast('兩次輸入的密碼不一致');return}
+  const{error}=await sb.auth.updateUser({password:a});
+  if(error){toast('變更失敗：'+error.message);return}
+  $('#pwDlg').close();toast('密碼已變更，下次請用新密碼登入');
+ }
+});
+document.addEventListener('keydown',e=>{
+ if(e.key==='Enter'&&(e.target.id==='lgEmail'||e.target.id==='lgPwd'))doLogin();
+});
+
+/* 登入後讀取 profiles：決定姓名、員工編號、部門（唯讀，無法自行修改） */
 async function applyConnection(){
  nas.prof=null;nas.err='';
- if(nas.root&&nas.ok){
+ if(nas.ok){
   try{
-   const p=JSON.parse((await (await (await nas.root.getFileHandle('profile.json')).getFile()).text()).replace(/^﻿/,''));
-   if(!p.emp||!p.name||!p.dept)throw new Error('profile.json 缺少 emp / name / dept 欄位');
-   if(!nas.root.name.includes(p.emp)||!nas.root.name.includes(p.name))throw new Error(`資料夾名稱與 profile.json 的人員（${p.emp} ${p.name}）不符，請選自己的資料夾`);
-   nas.prof=p;
-  }catch(e){nas.err=e.name==='NotFoundError'?'資料夾內找不到 profile.json，請確認選的是自己的個人資料夾，或請管理員建立':e.message}
+   const{data:p,error}=await sb.from('profiles').select('email,emp,name,dept,role,start_date,active').eq('email',nas.session.user.email.toLowerCase()).maybeSingle();
+   if(error)throw error;
+   if(!p)throw new Error('這個 Email 尚未建立人員資料，請聯絡管理員');
+   if(p.active===false)throw new Error('此帳號已停用，請聯絡管理員');
+   nas.prof={emp:p.emp,name:p.name,dept:p.dept,role:p.role,start:p.start_date||''};
+  }catch(e){nas.err=e.message}
  }
  $('#dept').value=nas.prof?.dept||'';$('#emp').value=nas.prof?.emp||'';$('#name').value=nas.prof?.name||'';
  $('#form').classList.toggle('locked',!nas.prof);
@@ -744,123 +788,70 @@ async function applyConnection(){
  nasBar();
  filled={};leaves={};loadedMonths.clear();for(const k in otDay)delete otDay[k];extraHol={};extraWork=new Set();
  if(nas.prof){
-  try{ /* 選用：個人資料夾內的 holidays.json 可補充公司休假 / 補班日 */
-   const c=JSON.parse((await (await (await nas.root.getFileHandle('holidays.json')).getFile()).text()).replace(/^﻿/,''));
-   extraHol=c.holidays||{};extraWork=new Set(c.workdays||[]);
-  }catch(e){}
   load($('#date').value);
   const[yy,mm]=$('#date').value.split('-').map(Number);
-  await loadMonthStatus(mm===1?yy-1:yy,mm===1?12:mm-1); await loadMonthStatus(yy,mm); await ensureOt();refreshUpcoming();
+  await loadMonthStatus(mm===1?yy-1:yy,mm===1?12:mm-1);await loadMonthStatus(yy,mm);await ensureOt();refreshUpcoming();
+  syncPending();
  }
  renderCal();
 }
-async function pickRoot(){
- try{
-  const h=await window.showDirectoryPicker({mode:'readwrite',id:'daily-report'});
-  nas.root=h;nas.ok=true;
-  try{await withTimeout(idb.set('root',h),2000)}catch(e){}   // 記不住資料夾也不影響本次使用
-  await applyConnection();
-  if(nas.prof)toast('已連線：'+nas.prof.name);
- }catch(e){if(e.name!=='AbortError')toast('無法選擇資料夾：'+e.message)}
-}
-async function reconnect(){
- nas.reErr='';toast('正在要求資料夾授權…');
- try{
-  const r=await Promise.race([nas.root.requestPermission({mode:'readwrite'}),new Promise(res=>setTimeout(()=>res('沒有回應'),8000))]);
-  nas.ok=r==='granted';
-  if(!nas.ok)nas.reErr=r==='denied'?'被拒絕':(r==='prompt'?'瀏覽器沒有跳出詢問':r);
-  await applyConnection();
- }catch(e){nas.reErr=e.message;nasBar()}
-}
-const withTimeout=(p,ms)=>Promise.race([p,new Promise(r=>setTimeout(()=>r(undefined),ms))]);
-async function nasInit(){
- nasBar();   // 先顯示「選擇資料夾」按鈕，不必等瀏覽器儲存空間回應
- if(nas.supported){
-  try{
-   nas.root=(await withTimeout(idb.get('root'),2000))||null;
-   if(nas.root)nas.ok=(await withTimeout(nas.root.queryPermission({mode:'readwrite'}),2000))==='granted';
-  }catch(e){}
- }
- await applyConnection();
-}
-/* 任何未預期的錯誤都顯示在 NAS 卡片，方便回報 */
+/* 任何未預期的錯誤都顯示在登入卡片，方便回報 */
 function showFatal(m){const el=$('#nasMsg');if(el){el.style.color='var(--bad)';el.textContent='⚠ 程式錯誤：'+m+'（請截圖回報）'}}
 window.addEventListener('error',e=>showFatal(e.message));
 window.addEventListener('unhandledrejection',e=>showFatal((e.reason&&e.reason.message)||String(e.reason)));
-function nasPath(d){const[y,m,dd]=d.split('-');return{y,month:+m+'月',file:m+dd+'.json',sheet:m+dd,mm:+m}}
+
+/* ---------- 讀寫日報（reports 表：每人每天一筆，data 欄位存整份日報 JSON） ---------- */
 async function nasRead(d){
- const p=nasPath(d);
- try{
-  const dir=await sub(await sub(await sub(nas.root,p.y,false),p.month,false),'_資料',false);
-  const f=await (await dir.getFileHandle(p.file)).getFile();
-  return JSON.parse(await f.text());
- }catch(e){if(e.name==='NotFoundError')return null;throw e}
+ const{data:r,error}=await sb.from('reports').select('data,saved_at').eq('emp',nas.prof.emp).eq('date',d).maybeSingle();
+ if(error)throw error;
+ if(!r)return null;
+ const j=r.data||{};if(!j.savedAt)j.savedAt=Date.parse(r.saved_at)||0;
+ return j;
 }
-async function nasLatestBefore(cur){
- let[y,m]=cur.split('-').map(Number),best=null;
- for(let k=0;k<3&&!best;k++){
+/* 一次取一段日期（月曆狀態、未來一週、月報表用，避免逐日查詢） */
+async function nasRange(from,to){
+ const{data:rows,error}=await sb.from('reports').select('date,data,saved_at').eq('emp',nas.prof.emp).gte('date',from).lte('date',to);
+ if(error)throw error;
+ const m={};(rows||[]).forEach(r=>{const j=r.data||{};if(!j.savedAt)j.savedAt=Date.parse(r.saved_at)||0;m[r.date]=j});
+ return m;
+}
+async function writeDayJson(d,dd){
+ const payload={emp:nas.prof.emp,date:d,data:{date:d,dept:nas.prof.dept,emp:nas.prof.emp,name:nas.prof.name,...dd},saved_at:new Date().toISOString()};
+ const{error}=await sb.from('reports').upsert(payload,{onConflict:'emp,date'});
+ if(error)throw error;
+ pendDel(d);
+}
+/* 離線 / 連線失敗時：先存在本機，待連線後自動補傳 */
+const pendKey=()=>'dr:pending:'+(nas.prof?nas.prof.emp:'?');
+const pendGet=()=>{try{return JSON.parse(ls.get(pendKey())||'[]')}catch(e){return[]}};
+const pendAdd=d=>{const a=pendGet();if(!a.includes(d)){a.push(d);ls.set(pendKey(),JSON.stringify(a))}};
+const pendDel=d=>{if(nas.prof)ls.set(pendKey(),JSON.stringify(pendGet().filter(x=>x!==d)))};
+async function syncPending(){
+ if(!nasReady())return;
+ for(const d of pendGet()){
   try{
-   const dir=await sub(await sub(await sub(nas.root,String(y),false),m+'月',false),'_資料',false);
-   for await(const[n]of dir.entries()){
-    const mt=n.match(/^(\d\d)(\d\d)\.json$/);if(!mt)continue;
-    const d=`${y}-${mt[1]}-${mt[2]}`;if(d<cur&&(!best||d>best))best=d;
-   }
-  }catch(e){}
-  m--;if(m<1){m=12;y--}
+   const raw=ls.get(key(d));if(!raw){pendDel(d);continue}
+   await writeDayJson(d,JSON.parse(raw));
+  }catch(e){break}
  }
- return best;
 }
+window.addEventListener('online',()=>syncPending());
 let nasT=null,nasQ=Promise.resolve();
 function scheduleNas(){
  if(!nasReady())return;
- clearTimeout(nasT);nasT=setTimeout(()=>flushNas(false),2500);
+ pendAdd($('#date').value);
+ clearTimeout(nasT);nasT=setTimeout(()=>flushNas(false),1500);
 }
 function flushNas(manual){
  clearTimeout(nasT);nasT=null;
  if(!nasReady()||!$('#date').value)return;
- const snap={d:$('#date').value,dept:nas.prof.dept,emp:nas.prof.emp,name:nas.prof.name,data:JSON.parse(JSON.stringify(data))};
- nasQ=nasQ.then(()=>nasWrite(snap)).then(msg=>{
-  const el=$('#nasLast');if(el){el.textContent=msg+' '+new Date().toLocaleTimeString('zh-TW',{hour12:false});el.style.color=msg.startsWith('⚠')?'var(--bad)':'var(--ok)'}
-  if(manual)toast(msg);
- }).catch(e=>{
-  const el=$('#nasLast');if(el){el.textContent='⚠ NAS 寫入失敗：'+e.message;el.style.color='var(--bad)'}
-  if(e.name==='NotAllowedError'){nas.ok=false;nasBar()}
-  if(manual)toast('NAS 寫入失敗：'+e.message);
- });
+ const snap={d:$('#date').value,data:JSON.parse(JSON.stringify(data))};
+ const show=(t,bad)=>{const el=$('#nasLast');if(el){el.textContent=t+' '+new Date().toLocaleTimeString('zh-TW',{hour12:false});el.style.color=bad?'var(--bad)':'var(--ok)'}};
+ pendAdd(snap.d);
+ nasQ=nasQ.then(()=>writeDayJson(snap.d,snap.data)).then(()=>{show('✔ 已同步到雲端');if(manual)toast('已儲存到雲端')})
+  .catch(e=>{show('⚠ 尚未同步（'+(navigator.onLine?e.message:'目前離線')+'），連線後會自動補傳',true);if(manual)toast('儲存失敗：'+e.message)});
 }
-async function nasWrite(s){
- const p=nasPath(s.d);
- const monthDir=await sub(await sub(nas.root,p.y),p.month);
- const jd=await sub(monthDir,'_資料');
- await writeFile(jd,p.file,JSON.stringify({date:s.d,dept:s.dept,emp:s.emp,name:s.name,...s.data}));
- if(!window.ExcelJS)return '⚠ 已存 JSON（Excel 元件未載入）';
- s.next=(await nextItemsFor(s.d)).items;
- const msg=await writeXlsx(s);
- /* 前一個上班日的「預估明日」欄位要跟著更新成這一天的工項 */
- try{
-  const pdte=prevWorkday(s.d),pj=await nasRead(pdte);
-  if(pj)await writeXlsx({d:pdte,dept:s.dept,emp:s.emp,name:s.name,data:migrate(pj),next:itemsOf(s.data)});
- }catch(e){}
- return msg;
-}
-async function writeXlsx(s){
- const p=nasPath(s.d);
- const monthDir=await sub(await sub(nas.root,p.y),p.month);
- const fn=`日報表-${s.emp?s.emp+'-':''}${safe(s.name)}-${p.mm}月.xlsx`;
- const wb=new ExcelJS.Workbook();
- let existing=null;
- try{existing=await (await monthDir.getFileHandle(fn)).getFile()}catch(e){if(e.name!=='NotFoundError')throw e}
- if(existing){
-  try{await wb.xlsx.load(await existing.arrayBuffer())}
-  catch(e){return '⚠ 已存 JSON；月報 Excel 讀取失敗，未覆寫（'+e.message+'）'}
- }
- buildSheet(wb,p.sheet,s);
- wb.worksheets.forEach(ws=>{const n=parseInt(ws.name,10);if(!isNaN(n))ws.orderNo=n});
- const buf=await wb.xlsx.writeBuffer();
- try{await writeFile(monthDir,fn,buf)}
- catch(e){return '⚠ 已存 JSON；Excel 檔可能被開啟中，關閉後再按「立即儲存」'}
- return '✔ 已存到 NAS（JSON + Excel）';
-}
+
 function buildSheet(wb,name,s){
  const old=wb.getWorksheet(name);if(old)wb.removeWorksheet(old.id);
  const ws=wb.addWorksheet(name,{pageSetup:{paperSize:9,orientation:'portrait',fitToPage:true,fitToWidth:1,fitToHeight:1,margins:{left:.4,right:.4,top:.5,bottom:.5,header:.3,footer:.3}}});
@@ -924,62 +915,66 @@ function buildSheet(wb,name,s){
  ws.eachRow(row=>row.eachCell(c=>{if(!c.font||!c.font.name)c.font=Object.assign({name:'Microsoft JhengHei',size:11},c.font||{})}));
 }
 
-/* ---------- 客戶協定附件（存到 NAS：年\月\_附件\MMDD\） ---------- */
+/* ---------- 客戶協定附件 / 異常批註單（存到雲端 Storage：附件 bucket） ---------- */
+const BUCKET='attachments';
 const fmtSize=n=>n>=1048576?(n/1048576).toFixed(1)+' MB':Math.max(1,Math.round(n/1024))+' KB';
-const fileExists=async(dir,n)=>{try{await dir.getFileHandle(n);return true}catch(e){return false}};
-async function attDir(d,create){const p=nasPath(d);return sub(await sub(await sub(await sub(nas.root,p.y,create),p.month,create),'_附件',create),p.sheet,create)}
 function renderAtt(){
  const ul=$('#attList');if(!ul)return;
  const a=data.f.att||[];
  ul.innerHTML=a.map((x,i)=>`<li><a data-open="${i}" title="開啟">📄 ${esc(x.name)}</a><span>${fmtSize(x.size||0)}</span><button type="button" data-rmatt="${i}" title="移除">✕</button></li>`).join('');
 }
-/* 把檔案寫進 _附件\MMDD\[子資料夾]，回傳實際存入的檔名與大小 */
-async function storeFiles(files,subName){
+/* 上傳檔案，路徑為 員工編號/日期/類別/時間_亂數.副檔名（原始檔名記在日報資料裡，避免中文檔名造成問題） */
+async function storeFiles(files,kind){
  const d=$('#date').value,saved=[];
- let dir=await attDir(d,true);if(subName)dir=await sub(dir,subName,true);
  for(const f of files){
-  if(f.size>100*1048576){toast(`${f.name} 超過 100 MB，未上傳`);continue}
-  let name=safe(f.name),base=name,ext='';const m=name.match(/^(.*?)(\.[^.]*)$/);if(m){base=m[1];ext=m[2]}
-  for(let k=1;await fileExists(dir,name);)name=`${base} (${++k})${ext}`;
-  await writeFile(dir,name,f);
-  saved.push({name,size:f.size,at:Date.now()});
+  if(f.size>50*1048576){toast(`${f.name} 超過 50 MB，未上傳`);continue}
+  const ext=(f.name.match(/\.[A-Za-z0-9]{1,8}$/)||[''])[0].toLowerCase();
+  const path=`${nas.prof.emp}/${d}/${kind}/${Date.now()}_${Math.random().toString(36).slice(2,7)}${ext}`;
+  const{error}=await sb.storage.from(BUCKET).upload(path,f,{contentType:f.type||'application/octet-stream',upsert:false});
+  if(error)throw error;
+  saved.push({name:f.name,path,size:f.size,at:Date.now()});
  }
  return{d,saved};
 }
-async function openStored(subName,name){
- try{
-  let dir=await attDir($('#date').value,false);if(subName)dir=await sub(dir,subName,false);
-  const f=await(await dir.getFileHandle(name)).getFile();const u=URL.createObjectURL(f);window.open(u,'_blank');setTimeout(()=>URL.revokeObjectURL(u),60000);
- }catch(err){toast('找不到檔案：'+name)}
+async function openStored(x){
+ if(!x||!x.path){toast('找不到檔案：'+(x&&x.name||''));return}
+ const w=window.open('','_blank');                      // 先開視窗，避免手機瀏覽器擋彈出視窗
+ const{data:r,error}=await sb.storage.from(BUCKET).createSignedUrl(x.path,300);
+ if(error||!r){if(w)w.close();toast('開啟失敗：'+(error?error.message:'找不到檔案'));return}
+ if(w)w.location=r.signedUrl;else location.href=r.signedUrl;
+}
+async function removeStored(x){
+ if(x&&x.path){const{error}=await sb.storage.from(BUCKET).remove([x.path]);if(error)throw error}
 }
 async function addFiles(files){
- if(!nasReady())return;
- let r;try{r=await storeFiles(files)}catch(e){toast('附件上傳失敗：'+e.message);return}
+ if(!nasReady()||!files.length)return;
+ toast('上傳中…');
+ let r;try{r=await storeFiles(files,'att')}catch(e){toast('附件上傳失敗：'+e.message);return}
  if(r.d!==$('#date').value||!r.saved.length)return;
  (data.f.att=data.f.att||[]).push(...r.saved);
- save();renderAtt();markDots();toast(`已存入 NAS：${r.saved.length} 個附件`);
+ save();renderAtt();markDots();toast(`已上傳 ${r.saved.length} 個附件`);
 }
-/* 預算調整的「異常批註單」：依規定須先有批註單才可進行預算調整，存到 _附件\MMDD\異常批註單\ */
-const BUD_SUB='異常批註單';
+/* 預算調整的「異常批註單」：依規定須先有批註單才可進行預算調整 */
 let budTarget=-1;
 async function addBudgetFiles(i,files){
  if(!nasReady()||!files.length)return;
- let r;try{r=await storeFiles(files,BUD_SUB)}catch(e){toast('批註單上傳失敗：'+e.message);return}
+ toast('上傳中…');
+ let r;try{r=await storeFiles(files,'bud')}catch(e){toast('批註單上傳失敗：'+e.message);return}
  if(r.d!==$('#date').value||!r.saved.length)return;
  const e=data.f.budgets[i];if(!e)return;
  (e.files=e.files||[]).push(...r.saved);
- save();renderMulti('budget');markDots();toast(`已存入 NAS：${r.saved.length} 份異常批註單`);
+ save();renderMulti('budget');markDots();toast(`已上傳 ${r.saved.length} 份異常批註單`);
 }
 document.addEventListener('click',async e=>{
  const pick=e.target.closest('[data-bpick]');
  if(pick){budTarget=+pick.dataset.bpick;$('#bFile').click();return}
  const op=e.target.closest('[data-bopen]');
- if(op){const[i,j]=op.dataset.bopen.split(':').map(Number);openStored(BUD_SUB,data.f.budgets[i].files[j].name);return}
+ if(op){const[i,j]=op.dataset.bopen.split(':').map(Number);openStored(data.f.budgets[i].files[j]);return}
  const rm=e.target.closest('[data-brm]');
  if(rm){
   const[i,j]=rm.dataset.brm.split(':').map(Number),fl=data.f.budgets[i].files[j];
-  if(!confirm(`要移除異常批註單「${fl.name}」嗎？\nNAS 上的這個檔案也會一併刪除。`))return;
-  try{await(await sub(await attDir($('#date').value,false),BUD_SUB,false)).removeEntry(fl.name)}catch(err){if(err.name!=='NotFoundError'){toast('刪除失敗：'+err.message);return}}
+  if(!confirm(`要移除異常批註單「${fl.name}」嗎？\n雲端上的這個檔案也會一併刪除。`))return;
+  try{await removeStored(fl)}catch(err){toast('刪除失敗：'+err.message);return}
   data.f.budgets[i].files.splice(j,1);save();renderMulti('budget');markDots();
  }
 });
@@ -994,23 +989,20 @@ const drop=$('#attDrop');
 drop.addEventListener('drop',e=>addFiles([...e.dataTransfer.files]));
 $('#attList').addEventListener('click',async e=>{
  const o=e.target.closest('[data-open]'),r=e.target.closest('[data-rmatt]');
- const d=$('#date').value;
- if(o){
-  const a=data.f.att[+o.dataset.open];
-  try{const f=await(await(await attDir(d,false)).getFileHandle(a.name)).getFile();const u=URL.createObjectURL(f);window.open(u,'_blank');setTimeout(()=>URL.revokeObjectURL(u),60000)}
-  catch(err){toast('找不到檔案：'+a.name)}
- }else if(r){
+ if(o){openStored(data.f.att[+o.dataset.open])}
+ else if(r){
   const i=+r.dataset.rmatt,a=data.f.att[i];
-  if(!confirm(`要從日報移除「${a.name}」嗎？\nNAS 上的這個附件檔也會一併刪除。`))return;
-  try{await(await attDir(d,false)).removeEntry(a.name)}catch(err){if(err.name!=='NotFoundError'){toast('刪除失敗：'+err.message);return}}
+  if(!confirm(`要從日報移除「${a.name}」嗎？\n雲端上的這個附件檔也會一併刪除。`))return;
+  try{await removeStored(a)}catch(err){toast('刪除失敗：'+err.message);return}
   data.f.att.splice(i,1);if(!data.f.att.length)delete data.f.att;
   save();renderAtt();markDots();
  }
 });
 
+
 /* ---------- 月曆 ---------- */
 /* 國定假日與補班日：依人事行政總處公告整理，請以公司行事曆為準；
-   個人資料夾放 holidays.json（{"holidays":{"2026-12-24":"公司休"},"workdays":["2026-02-07"]}）可補充 */
+   公司自訂的休假 / 補班日，之後可改由雲端設定補充（extraHol / extraWork） */
 const HOL={
  '2026-01-01':'元旦',
  '2026-02-14':'春節','2026-02-15':'春節','2026-02-16':'除夕','2026-02-17':'春節','2026-02-18':'春節','2026-02-19':'春節','2026-02-20':'春節','2026-02-21':'春節','2026-02-22':'春節',
@@ -1033,15 +1025,9 @@ async function loadMonthStatus(y,m){
  const k=`${y}-${m}`;if(loadedMonths.has(k)||!nasReady())return;
  loadedMonths.add(k);
  try{
-  const dir=await sub(await sub(await sub(nas.root,String(y),false),m+'月',false),'_資料',false);
-  const jobs=[];
-  for await(const[n,h]of dir.entries()){
-   const mt=n.match(/^(\d\d)(\d\d)\.json$/);if(!mt||h.kind!=='file')continue;
-   const d=`${y}-${mt[1]}-${mt[2]}`;
-   jobs.push((async()=>{try{const j=JSON.parse((await (await h.getFile()).text()).replace(/^\uFEFF/,''));filled[d]=hasContent(j);leaves[d]=leaveShort(j.f);otDay[d]=otHours(j.f,d)}catch(e){}})());
-  }
-  await Promise.all(jobs);
- }catch(e){}
+  const map=await nasRange(`${y}-${pad(m)}-01`,`${y}-${pad(m)}-${pad(new Date(y,m,0).getDate())}`);
+  for(const d in map){const j=map[d];filled[d]=hasContent(j);leaves[d]=leaveShort(j.f);otDay[d]=otHours(j.f,d)}
+ }catch(e){loadedMonths.delete(k)}
  renderCal();renderOt();scheduleUp();
 }
 function computeWarn(){
@@ -1089,7 +1075,7 @@ function renderCal(){
 }
 function selectDate(s){
  if(!s||s===$('#date').value)return;
- if(nasT)flushNas(false);              // 切換前先把前一天的內容寫進 NAS
+ if(nasT)flushNas(false);              // 切換前先把前一天的內容寫進雲端
  $('#date').value=s;
  const[y,m]=s.split('-').map(Number);
  if(y!==cal.y||m!==cal.m){cal.y=y;cal.m=m;loadMonthStatus(y,m)}
@@ -1203,9 +1189,11 @@ const scheduleUp=()=>{clearTimeout(upT);upT=setTimeout(refreshUpcoming,1200)};
 async function refreshUpcoming(){
  if(!nasReady())return;
  const base=parseD(todayStr()),rows=[];
+ const e1=new Date(base);e1.setDate(e1.getDate()+1);const e7=new Date(base);e7.setDate(e7.getDate()+7);
+ let map={};try{map=await nasRange(fmtD(e1),fmtD(e7))}catch(e){}
  for(let i=1;i<=7;i++){
   const d=new Date(base);d.setDate(d.getDate()+i);const s=fmtD(d);
-  const dd=await loadDay(s);
+  const dd=await loadDay(s,map[s]||null);
   rows.push({s,work:isWork(s),name:offName(s),leave:dd.f&&dd.f.leave?leaveText(dd.f):'',items:(dd.today||[]).filter(hasItem)});
  }
  upCache.rows=rows;renderAlerts();
@@ -1294,7 +1282,7 @@ $('#plCancel').onclick=()=>plDlg.close();$('#plOk').onclick=async()=>{
   if(isCur){renderRows();save()}
   else{
    dd.savedAt=Date.now();ls.set(key(s),JSON.stringify(dd));filled[s]=true;
-   nasQ=nasQ.then(()=>writeDayJson(s,dd)).catch(e=>toast('NAS 寫入失敗：'+e.message));
+   nasQ=nasQ.then(()=>writeDayJson(s,dd)).catch(e=>toast('雲端寫入失敗：'+e.message));
   }
   n++;
  }
@@ -1309,9 +1297,10 @@ async function exportMonthly(){
  const y=cal.y,m=cal.m,last=new Date(y,m,0).getDate(),ts=todayStr();
  toast('整理月報表中…');
  const rows=[];let work=0,done=0,leaveDays=0;
+ let map={};try{map=await nasRange(`${y}-${pad(m)}-01`,`${y}-${pad(m)}-${pad(last)}`)}catch(e){toast('讀取雲端失敗：'+e.message);return}
  for(let i=1;i<=last;i++){
   const s=`${y}-${pad(m)}-${pad(i)}`,w=isWork(s);
-  const dd=await loadDay(s),has=hasContent(dd);
+  const dd=await loadDay(s,map[s]||null),has=hasContent(dd);
   if(!w&&!has)continue;
   if(w)work++;if(w&&has)done++;if(dd.f.leave)leaveDays+=dd.f.leave.part==='全天'?1:0.5;
   const items=listItems(dd).map((r,j)=>`${j+1}. ${itemText(r)}${r.p!==''&&r.p!=null?`（${r.p}%）`:''}${(r.r||'').trim()?`　※${r.r.trim()}`:''}`);
@@ -1344,24 +1333,23 @@ async function exportMonthly(){
  ws.getCell(`A${r+1}`).value='＊ 假日出勤（有填寫內容的非上班日）。「特殊事項」僅列出當日實際有填寫的欄位。';ws.getCell(`A${r+1}`).font=F({size:10,color:{argb:'FF6B7685'}});
  ws.views=[{state:'frozen',ySplit:4}];
  const buf=await wb.xlsx.writeBuffer(),fn=`月報表-${nas.prof.emp}-${safe(nas.prof.name)}-${m}月.xlsx`;
- try{
-  const md=await sub(await sub(nas.root,String(y)),m+'月');
-  await writeFile(md,fn,buf);
-  toast(`月報表已存到 NAS：${y}\\${m}月\\${fn}`);
- }catch(e){
-  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}));a.download=fn;a.click();URL.revokeObjectURL(a.href);
-  toast('NAS 寫入失敗（'+e.message+'），已改為下載');
- }
-}
-$('#btnMonthly').onclick=exportMonthly;
+ const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}));a.download=fn;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),10000);
+ toast('月報表已下載：'+fn);
+}$('#btnMonthly').onclick=exportMonthly;
 
 /* ---------- 初始化 ---------- */
 (async function init(){
  $('#date').value=todayStr();
  [cal.y,cal.m]=todayStr().split('-').map(Number);
  renderCal();
- await nasInit();
-})();
-</script>
+ if(!initClient()){nasBar();return}
+ nasBar();
+ let lastUid='__init__';
+ sb.auth.onAuthStateChange((ev,session)=>{
+  const uid=session&&session.user?session.user.id:null;
+  nas.session=session;nas.ok=!!session;
+  if(uid!==lastUid){lastUid=uid;if(!uid)login.step='email';setTimeout(()=>applyConnection(),0)}   // 不在回呼內直接呼叫 Supabase（官方建議）
+ });
+})();</script>
 </body>
 </html>
