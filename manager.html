@@ -185,10 +185,11 @@ const hasContent=j=>(j.today||[]).some(hasItem)||!!(j.f&&j.f.leave);
 const OT_START=8*60+30,OT_END=18*60,OT_BREAKS=[[12*60,13*60],[17*60+30,18*60]];
 const OT_LV=[[100,4],[80,3],[60,2],[46,1]];
 const OT_TXT={1:'已超出 46 小時',2:'已超出 60 小時',3:'已超出 80 小時',4:'已超出 100 小時'};
-const OT_RULE='08:30～12:00、13:00～17:30 為工作時間；17:30～18:00 晚休不計，18:00 後算加班';
+const OT_UNIT=30;   // 加班以 0.5 小時（30 分鐘）為單位；每天各自計算，不足 30 分鐘不計（要改成四捨五入，把下方 Math.floor 改成 Math.round）
+const OT_RULE='08:30～12:00、13:00～17:30 為工作時間；17:30～18:00 晚休不計，18:00 後算加班；以 0.5 小時為單位，不足 30 分鐘不計';
 const otDay={};let otState=null;
 const tmin=t=>{const[h,m]=String(t).split(':').map(Number);return h*60+m};
-const fmtH=h=>{const m=Math.round(h*60);return m%60?`${Math.floor(m/60)} 小時 ${m%60} 分`:`${m/60} 小時`};
+const fmtH=h=>`${Math.round(h*10)/10} 小時`;
 const ovl=(a,b,x,y)=>Math.max(0,Math.min(b,y)-Math.max(a,x));
 function otHours(f,d){
  if(!f||!f.tIn||!f.tOff||leaveFull(f))return 0;
@@ -196,7 +197,7 @@ function otHours(f,d){
  const min=isWork(d)
   ?ovl(a,b,-Infinity,OT_START)+ovl(a,b,OT_END,Infinity)                       // 上班日：08:30 前 + 18:00 後
   :(b-a)-OT_BREAKS.reduce((n,[x,y])=>n+ovl(a,b,x,y),0);                       // 假日出勤：全部時數扣掉休息時段
- return Math.max(0,min)/60;
+ return Math.floor(Math.max(0,min)/OT_UNIT)*OT_UNIT/60;       // 以 0.5 小時為單位
 }
 function otPeriod(d){
  const[y,m,dd]=d.split('-').map(Number);let sy=y,sm=m;
