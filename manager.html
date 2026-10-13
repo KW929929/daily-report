@@ -48,6 +48,19 @@ dialog h3{margin:0 0 6px;font-size:16px}
 .it{border:1px solid var(--line);border-radius:8px;overflow:hidden;margin:6px 0}.it div{display:flex;gap:10px;padding:5px 10px;border-bottom:1px solid var(--line);font-size:13px}.it div:last-child{border-bottom:0}.it div span:first-child{flex:1}
 .sec{margin:8px 0}.sec b{display:block;font-size:12px;color:var(--mute);margin-bottom:2px}.sec pre{margin:0;white-space:pre-wrap;font:inherit;background:var(--bg);border-radius:6px;padding:6px 10px}
 .mute{color:var(--mute)}
+.asgp{display:flex;flex-wrap:wrap;gap:6px;max-height:160px;overflow:auto;border:1px solid var(--line);border-radius:8px;padding:8px}
+.asgp label{display:flex;align-items:center;gap:5px;border:1px solid var(--line);border-radius:14px;padding:2px 10px;font-size:13px;cursor:pointer;background:var(--bg)}
+.asgp label.on{background:var(--pri);border-color:var(--pri);color:#fff}.asgp input{display:none}
+.asgform{display:grid;gap:8px;grid-template-columns:150px 1fr 140px 140px 160px auto;align-items:end;margin-top:4px}
+.asgform label{display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--mute)}.asgform input{width:100%}
+.asgform .asgw{flex-direction:row;align-items:center;gap:6px;padding-bottom:6px;white-space:nowrap}.asgform .asgw input{width:auto}
+.asgform .asgnote{grid-column:1/-1}
+@media (max-width:760px){.asgform{grid-template-columns:1fr 1fr}.asgform label:nth-child(2){grid-column:1/-1}}
+.atk{border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin-top:8px;background:var(--bg)}
+.atk .t1{font-weight:600}.atk .t2{font-size:12px;color:var(--mute);margin:2px 0 4px}.atk .t3{font-size:12px;color:#7a4b00;margin-bottom:4px}
+.atk .who{display:inline-block;margin:2px 4px 2px 0;padding:0 8px;border-radius:10px;font-size:12px;border:1px solid var(--line)}
+.atk .who.d{background:#d9f2e3;color:#14532d}.atk .who.r{background:#fff0c9;color:#6b4a00}
+.atk .act{display:flex;gap:6px;margin-top:6px}.atk .act button{padding:2px 10px;font-size:12px}
 /* 矩陣上的特殊事項標記：右上角橘點；預算調整缺批註單：紅點 */
 table.mx td.c.hasSp{position:relative}
 table.mx td.c.hasSp::after{content:"";position:absolute;top:2px;right:2px;width:7px;height:7px;border-radius:50%;background:#e8590c}
@@ -61,6 +74,19 @@ table.mx td.c.bm::after{background:#d6336c;box-shadow:0 0 0 2px #ffd6e7}
 .spr:last-child{border-bottom:0}.spr:hover{background:var(--bg)}
 .spr .sd{flex:none;width:40px;color:var(--mute)}.spr .sn{flex:none;width:64px;font-weight:600}
 .spr .stx{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.spr .stx.mute{color:var(--mute)}
+.asgp{display:flex;flex-wrap:wrap;gap:6px;max-height:160px;overflow:auto;border:1px solid var(--line);border-radius:8px;padding:8px}
+.asgp label{display:flex;align-items:center;gap:5px;border:1px solid var(--line);border-radius:14px;padding:2px 10px;font-size:13px;cursor:pointer;background:var(--bg)}
+.asgp label.on{background:var(--pri);border-color:var(--pri);color:#fff}.asgp input{display:none}
+.asgform{display:grid;gap:8px;grid-template-columns:150px 1fr 140px 140px 160px auto;align-items:end;margin-top:4px}
+.asgform label{display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--mute)}.asgform input{width:100%}
+.asgform .asgw{flex-direction:row;align-items:center;gap:6px;padding-bottom:6px;white-space:nowrap}.asgform .asgw input{width:auto}
+.asgform .asgnote{grid-column:1/-1}
+@media (max-width:760px){.asgform{grid-template-columns:1fr 1fr}.asgform label:nth-child(2){grid-column:1/-1}}
+.atk{border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin-top:8px;background:var(--bg)}
+.atk .t1{font-weight:600}.atk .t2{font-size:12px;color:var(--mute);margin:2px 0 4px}.atk .t3{font-size:12px;color:#7a4b00;margin-bottom:4px}
+.atk .who{display:inline-block;margin:2px 4px 2px 0;padding:0 8px;border-radius:10px;font-size:12px;border:1px solid var(--line)}
+.atk .who.d{background:#d9f2e3;color:#14532d}.atk .who.r{background:#fff0c9;color:#6b4a00}
+.atk .act{display:flex;gap:6px;margin-top:6px}.atk .act button{padding:2px 10px;font-size:12px}
 .bmw{flex:none;color:#d6336c;font-size:12px;font-weight:600}
 .tag{flex:none;display:inline-block;padding:0 8px;border-radius:10px;font-size:11px;white-space:nowrap;background:var(--bg);border:1px solid var(--line)}
 .tag.sp-cust{background:#dbe9fb;color:#133c78}.tag.sp-budget{background:#ffe3c2;color:#6b3300}.tag.sp-award{background:#e9defc;color:#3b1f78}
@@ -97,6 +123,7 @@ table.mx td.c.bm::after{background:#d6336c;box-shadow:0 0 0 2px #ffd6e7}
    <div class="note" style="margin-top:6px">統計期間為每月 21 日～次月 20 日；顏色與加班規則與工程師端一致。點任一格可查看當天日報內容（唯讀）。</div>
   </section>
   <section class="card" id="alerts"></section>
+  <section class="card" id="spCard"></section>
   <section class="card">
    <div class="tblwrap"><table class="mx" id="mx"></table></div>
    <div class="legend">
@@ -105,7 +132,27 @@ table.mx td.c.bm::after{background:#d6336c;box-shadow:0 0 0 2px #ffd6e7}
     <span>加班：<i class="lv1">46</i><i class="lv2">60</i><i class="lv3">80</i><i class="lv4">100</i> 小時以上</span>
    </div>
   </section>
-  <section class="card" id="spCard"></section>
+  <details class="card" id="asgCard">
+   <summary><b>📌 指派任務給下屬</b><span class="note">（待辦 / 目標任務：工程師打開網頁時會自動帶入每天的工項）</span></summary>
+   <div id="asgBody" style="margin-top:10px">
+    <div class="note">① 選擇要指派的人</div>
+    <div class="bar" style="margin:4px 0"><button id="asgAll" type="button">全選</button><button id="asgNone" type="button">清除</button><span class="note" id="asgCnt"></span></div>
+    <div id="asgPeople" class="asgp"></div>
+    <div class="note" style="margin-top:10px">② 任務內容</div>
+    <div class="asgform">
+     <label>案號<input id="aC" placeholder="P000000000"></label>
+     <label>內容<input id="aT" placeholder="例：完成配管試壓、整理設備清冊"></label>
+     <label>預計開始<input id="aS" type="date"></label>
+     <label>預計結束<input id="aE" type="date"></label>
+     <label>完成時進度 %（選填）<input id="aP" type="number" min="0" max="100" placeholder="例：100"></label>
+     <label class="asgw"><input id="aW" type="checkbox">含週末與假日</label>
+     <label class="asgnote">備註 / 目標說明（工程師看得到）<input id="aN" placeholder="例：驗收前必須完成，需附照片"></label>
+    </div>
+    <div class="bar" style="margin-top:8px"><button class="pri" id="aAdd" type="button">指派</button><button id="aCancel" type="button" hidden>取消修改</button><span class="note" id="aMsg"></span></div>
+    <h2 style="margin:14px 0 4px;font-size:14px">我指派的任務</h2>
+    <div id="asgList"></div>
+   </div>
+  </details>
  </div>
 </main>
 
@@ -246,7 +293,7 @@ async function enter(session){
  const{data:p,error}=await sb.from('profiles').select('email,emp,name,dept,role,active').eq('email',session.user.email.toLowerCase()).maybeSingle();
  if(error||!p){msg('讀取人員資料失敗：'+(error?esc(error.message):'此帳號尚未建立人員資料'),true);return}
  if(!['manager','admin'].includes(p.role)){msg('此頁僅限主管 / 管理員使用。你的角色是「'+esc(p.role)+'」。<br><a class="btn" href="index.html" style="margin-top:8px">回到我的日報</a>',true);show('#app',false);return}
- me=p;$('#who').textContent=`${p.name}（${p.role==='admin'?'管理員':'主管'}）`;
+ me=p;$('#who').textContent=`${p.name}（${p.role==='admin'?'管理員・可查看全部人員':'主任・可查看自己與所屬下屬'}）`;
  show('#app',true);
  const t=todayStr().split('-').map(Number);period=periodOf(`${t[0]}-${pad(t[1])}-${pad(t[2])}`);
  await load();
@@ -283,8 +330,12 @@ async function load(){
   }
   byEmp={};for(const r of all){(byEmp[r.emp]=byEmp[r.emp]||{})[r.date]=migrate(Object.assign({today:[],f:{}},r.data||{}))}
   msg('');
+  // 主任尚未被指派下屬：只看得到自己
+  if(me.role==='manager'&&people.length<=1)msg('目前沒有設定你的下屬，只能看到自己的資料。請管理員在人員資料指定「直屬主管」（reports_to）。');
  }catch(e){msg('讀取失敗：'+esc(e.message),true);return}
  compute();render();
+ if(!asgEdit)asgForm();
+ loadAssigned();
 }
 
 /* ---------- 計算每人每天狀態 ---------- */
@@ -428,6 +479,85 @@ $('#btnXls').onclick=async()=>{
  a.href=URL.createObjectURL(new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}));
  a.download=`日報填寫狀況_${period.start}_${period.end}.xlsx`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),10000);
 };
+
+/* ---------- 指派任務（寫入 todos 表；工程師打開網頁時才會帶入每日工項） ---------- */
+let myTasks=[],asgEdit=null,asgErr='',asgSel=new Set(),asgBusy=false;
+const nextWd=s=>{const d=parseD(s);for(let i=0;i<14;i++){d.setDate(d.getDate()+1);if(isWork(fmtD(d)))return fmtD(d)}return fmtD(d)};
+function asgForm(){
+ asgEdit=null;asgSel=new Set();
+ ['aC','aT','aP','aN'].forEach(id=>$('#'+id).value='');$('#aW').checked=false;
+ const n=nextWd(todayStr());$('#aS').value=n;$('#aE').value=n;
+ $('#aAdd').textContent='指派';$('#aCancel').hidden=true;$('#aMsg').textContent='';
+ renderAsgPeople();
+}
+function renderAsgPeople(){
+ const L=people.filter(p=>p.emp!==me.emp);
+ $('#asgPeople').innerHTML=L.length?L.map(p=>`<label class="${asgSel.has(p.emp)?'on':''}"><input type="checkbox" data-ae="${esc(p.emp)}" ${asgSel.has(p.emp)?'checked':''} ${asgEdit?'disabled':''}>${esc(p.name)}<small style="opacity:.7">${esc(p.emp)}</small></label>`).join(''):'<span class="note">目前沒有可指派的人員（請管理員先設定你的下屬 reports_to）。</span>';
+ $('#asgCnt').textContent=asgEdit?'（修改時無法更換人員；要換人請刪除後重新指派）':`已選 ${asgSel.size} 人`;
+}
+$('#asgPeople').addEventListener('change',e=>{const c=e.target.closest('[data-ae]');if(!c)return;c.checked?asgSel.add(c.dataset.ae):asgSel.delete(c.dataset.ae);renderAsgPeople()});
+$('#asgAll').onclick=()=>{if(asgEdit)return;people.filter(p=>p.emp!==me.emp).forEach(p=>asgSel.add(p.emp));renderAsgPeople()};
+$('#asgNone').onclick=()=>{if(asgEdit)return;asgSel.clear();renderAsgPeople()};
+async function loadAssigned(){
+ const{data:r,error}=await sb.from('todos').select('*').eq('assigned_by',me.emp).order('start_date');
+ if(error){asgErr=/column|relation|schema cache|PGRST/i.test(error.message)?'尚未啟用指派功能：請先在資料庫執行「更新_指派任務.sql」（需先有「更新_待辦事項.sql」）。':'讀取失敗：'+error.message;myTasks=[]}
+ else{asgErr='';myTasks=r||[]}
+ renderAssigned();
+}
+function renderAssigned(){
+ const box=$('#asgList');
+ if(asgErr){box.innerHTML=`<div class="err">⚠ ${esc(asgErr)}</div>`;return}
+ if(!myTasks.length){box.innerHTML='<div class="note">還沒有指派過任務。</div>';return}
+ const groups=new Map();
+ for(const t of myTasks){const k=[t.c,t.t,t.start_date,t.end_date,t.weekends,t.p1,t.note].join('|');(groups.get(k)||groups.set(k,[]).get(k)).push(t)}
+ const s=x=>`${+x.slice(5,7)}/${+x.slice(8)}`,nm=Object.fromEntries(people.map(p=>[p.emp,p.name]));
+ box.innerHTML=[...groups.values()].sort((a,b)=>b[0].start_date.localeCompare(a[0].start_date)).map(g=>{
+  const t=g[0],done=g.filter(x=>x.done).length;
+  return`<div class="atk"><div class="t1">${esc(itemText(t))||'（未命名）'}</div>
+   <div class="t2">${s(t.start_date)}～${s(t.end_date)}${t.weekends?'・含週末':''}${t.p1!=null?`・完成時 ${t.p1}%`:''}・完成 ${done} / ${g.length} 人</div>
+   ${t.note?`<div class="t3">備註：${esc(t.note)}</div>`:''}
+   <div>${g.map(x=>`<span class="who ${x.done?'d':'r'}">${esc(nm[x.emp]||x.emp)}${x.done?' ✓完成':' 進行中'}</span>`).join('')}</div>
+   <div class="act"><button type="button" data-aedit="${g.map(x=>x.id).join(',')}">編輯</button><button type="button" data-adel="${g.map(x=>x.id).join(',')}">刪除</button></div></div>`}).join('');
+}
+async function asgSave(){
+ if(asgBusy)return;
+ const c=$('#aC').value.trim(),t=$('#aT').value.trim(),s=$('#aS').value,e=$('#aE').value,w=$('#aW').checked,note=$('#aN').value.trim();
+ let p=$('#aP').value.trim();p=p===''?null:Math.max(0,Math.min(100,Math.round(+p)));
+ if(!c&&!t){$('#aMsg').textContent='請填寫案號或內容';return}
+ if(!s||!e){$('#aMsg').textContent='請選擇預計開始與結束日';return}
+ if(e<s){$('#aMsg').textContent='結束日不能早於開始日';return}
+ if(!asgEdit&&!asgSel.size){$('#aMsg').textContent='請先選擇要指派的人';return}
+ asgBusy=true;$('#aAdd').disabled=true;$('#aMsg').textContent='處理中…';
+ try{
+  const f={c,t,start_date:s,end_date:e,weekends:w,p1:p,note:note||null};
+  if(asgEdit){const{error}=await sb.from('todos').update(f).in('id',asgEdit);if(error)throw error;$('#aMsg').textContent='';toast('已更新任務（工程師下次打開網頁時會同步）')}
+  else{
+   const rows=[...asgSel].map(emp=>Object.assign({emp,assigned_by:me.emp,assigned_by_name:me.name},f));
+   const{error}=await sb.from('todos').insert(rows);if(error)throw error;
+   toast(`已指派給 ${rows.length} 人（他們下次打開網頁時會收到並自動帶入每日工項）`);
+  }
+  asgForm();await loadAssigned();
+ }catch(err){
+  $('#aMsg').textContent='失敗：'+(/row-level security/i.test(err.message)?'你沒有權限指派給所選人員（只能指派給自己的下屬）':err.message);
+ }finally{asgBusy=false;$('#aAdd').disabled=false}
+}
+$('#aAdd').onclick=asgSave;$('#aCancel').onclick=asgForm;
+document.addEventListener('click',async e=>{
+ const ed=e.target.closest('[data-aedit]'),dl=e.target.closest('[data-adel]');
+ if(ed){
+  const ids=ed.dataset.aedit.split(','),t=myTasks.find(x=>x.id===ids[0]);if(!t)return;
+  asgEdit=ids;asgSel=new Set(myTasks.filter(x=>ids.includes(x.id)).map(x=>x.emp));
+  $('#aC').value=t.c;$('#aT').value=t.t;$('#aS').value=t.start_date;$('#aE').value=t.end_date;$('#aP').value=t.p1==null?'':t.p1;$('#aW').checked=!!t.weekends;$('#aN').value=t.note||'';
+  $('#aAdd').textContent='儲存修改';$('#aCancel').hidden=false;$('#aMsg').textContent='編輯中';renderAsgPeople();$('#aC').scrollIntoView({block:'center'});return;
+ }
+ if(dl){
+  const ids=dl.dataset.adel.split(','),t=myTasks.find(x=>x.id===ids[0]);if(!t)return;
+  if(!confirm(`要刪除任務「${itemText(t)}」嗎？（共 ${ids.length} 人）\n工程師下次打開網頁時，今天以後由它帶入的工項會被移除；今天與過去的保留。`))return;
+  const{error}=await sb.from('todos').delete().in('id',ids);
+  if(error){toast('刪除失敗：'+error.message);return}
+  toast('已刪除任務');if(asgEdit&&asgEdit.some(i=>ids.includes(i)))asgForm();await loadAssigned();
+ }
+});
 
 boot();
 </script>

@@ -166,6 +166,19 @@ dialog h3{margin:0 0 8px;font-size:16px}
 }
 .lgErr{color:var(--bad);font-size:13px;margin:6px 0;min-height:1em}.lgshow{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--mute);margin-top:6px}.lgshow input{width:auto}
 .lgrow{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap}.lgrow .f{flex:1;min-width:200px}
+.todoform{display:grid;gap:8px;grid-template-columns:150px 1fr 140px 140px 160px auto;align-items:end}
+.tdW{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--mute);padding-bottom:8px;white-space:nowrap}.tdW input{width:auto}
+@media (max-width:760px){.todoform{grid-template-columns:1fr 1fr}.todoform label.f:nth-child(2){grid-column:1/-1}}
+.tdBadge{margin-left:auto;font-size:12px;color:var(--pri);font-weight:400}
+.td{border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin-top:8px;background:var(--bg)}
+.tdMain{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.tdSub{font-size:12px;color:var(--mute);margin:2px 0 6px}
+.tdAct{display:flex;gap:6px;flex-wrap:wrap}.tdAct button{padding:2px 10px;font-size:12px}
+.tdTag{font-size:11px;padding:0 8px;border-radius:10px;border:1px solid var(--line)}
+.t-run{background:#d9f2e3;color:#14532d}.t-late{background:#fbd5d0;color:#7a1c12}.t-plan{background:#dbe9fb;color:#133c78}.t-done{background:var(--line);color:var(--mute)}
+.td-done{opacity:.65}
+.tdBy{font-size:12px;color:#7a4b00;background:#fff3d6;border-radius:6px;padding:2px 8px;margin:0 0 6px;display:inline-block}
+@media (prefers-color-scheme:dark){.tdBy{background:#4a3a10;color:#ffe8a8}}
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#222;color:#fff;padding:8px 16px;border-radius:20px;font-size:13px;opacity:0;transition:.2s;pointer-events:none}
 .toast.on{opacity:1}
 @media (max-width:760px){
@@ -255,6 +268,22 @@ dialog h3{margin:0 0 8px;font-size:16px}
   <div class="ot hideOnLeave" id="otToday"></div>
   <div id="otBox"></div>
  </section>
+
+ <details class="card hideOnLeave" id="todoCard">
+  <summary><b>待辦事項</b><span class="hint">（填入預計開始與結束日，系統會自動帶入每天的工項）</span><span class="tdBadge" id="tdBadge"></span></summary>
+  <div class="body">
+   <div class="todoform">
+    <label class="f">案號<input id="tdC" list="cases" placeholder="P000000000"></label>
+    <label class="f">內容<input id="tdT" placeholder="例：配管工程、業主週會"></label>
+    <label class="f">預計開始<input id="tdS" type="date"></label>
+    <label class="f">預計結束<input id="tdE" type="date"></label>
+    <label class="f">完成時進度 %（選填）<input id="tdP" type="number" min="0" max="100" inputmode="numeric" placeholder="例：100"></label>
+    <label class="tdW"><input id="tdW" type="checkbox">含週末與假日</label>
+   </div>
+   <div class="bar" style="margin-top:8px"><button type="button" class="pri" id="tdAdd">新增待辦</button><button type="button" id="tdCancel" hidden>取消修改</button><span class="note" id="tdMsg"></span></div>
+   <div id="tdList"></div>
+  </div>
+ </details>
 
  <section class="card hideOnLeave">
   <h2>今日工作主要工項<span class="hint">也可先切到下一個上班日預先填寫，進度先填預估值</span></h2>
@@ -803,6 +832,7 @@ async function applyConnection(){
   const[yy,mm]=$('#date').value.split('-').map(Number);
   await loadMonthStatus(mm===1?yy-1:yy,mm===1?12:mm-1);await loadMonthStatus(yy,mm);await ensureOt();refreshUpcoming();
   syncPending();
+  loadTodos();tdFormReset();
  }
  renderCal();
 }
@@ -1237,6 +1267,194 @@ function renderAlerts(){
  const warn=nr&&!nr.items.length&&!nr.leave?`<div class="upwarn">⚠ 下一個上班日 ${chip(nr)} 尚未預排工項，可先安排（也能用「預排多日工項」一次排多天）。</div>`:'';
  up.innerHTML=`<div class="uph">📅 未來一週工項（${s(R[0].s)}～${s(R[6].s)}）</div>${warn}${lines||'<div class="upl empty"><span>這一週沒有上班日</span></div>'}`;
 }
+/* ---------- 待辦事項：預計開始～結束，自動帶入範圍內每個上班日的「今日工項」 ----------
+   待辦存在 todos 表；帶入的工項帶有 tid（待辦編號）標記，之後編輯 / 完成 / 刪除時才找得到。 */
+let todos=[],tdEditing=null,tdErr='';
+const tdUsable=()=>nasReady()&&!tdErr;
+function todoDays(td){
+ const out=[];
+ for(const d=parseD(td.start_date);fmtD(d)<=td.end_date&&out.length<200;d.setDate(d.getDate()+1)){const s=fmtD(d);if(td.weekends||isWork(s))out.push(s)}
+ return out;
+}
+const todoProg=(td,i,n)=>td.p1==null||td.p1===''?'':Math.round(td.p1*(i+1)/n);
+function todoStatus(td){
+ const t=todayStr();
+ if(td.done)return['已完成','done'];
+ if(td.end_date<t)return['已逾期','late'];
+ if(td.start_date>t)return['未開始','plan'];
+ return['進行中','run'];
+}
+async function loadTodos(){
+ if(!nasReady())return;
+ const{data:r,error}=await sb.from('todos').select('*').eq('emp',nas.prof.emp).order('start_date').order('created_at');
+ if(error){tdErr=/relation|schema cache|does not exist|PGRST205/i.test(error.message)?'尚未啟用待辦功能：管理員需先在資料庫執行「更新_待辦事項.sql」。':'讀取待辦失敗：'+error.message;todos=[]}
+ else{tdErr='';todos=r||[]}
+ renderTodos();
+ if(!tdErr){await syncTodoRows();noticeAssigned()}
+}
+function renderTodos(){
+ const box=$('#tdList');if(!box)return;
+ const open=todos.filter(t=>!t.done).length;
+ $('#tdBadge').textContent=open?`${open} 項進行中 / 未完成`:'';
+ if(tdErr){box.innerHTML=`<div class="err" style="color:var(--bad);margin-top:8px">⚠ ${esc(tdErr)}</div>`;return}
+ if(!todos.length){box.innerHTML='<div class="note" style="margin-top:10px">還沒有待辦事項。填寫上方欄位後按「新增待辦」。</div>';return}
+ const s=x=>`${+x.slice(5,7)}/${+x.slice(8)}`;
+ const order={run:0,late:1,plan:2,done:3};
+ const L=[...todos].sort((a,b)=>order[todoStatus(a)[1]]-order[todoStatus(b)[1]]||a.start_date.localeCompare(b.start_date));
+ box.innerHTML=L.map(td=>{
+  const[st,cl]=todoStatus(td),n=todoDays(td).length;
+  return`<div class="td td-${cl}"><div class="tdMain"><b>${esc(itemText(td))||'（未命名）'}</b>
+   <span class="tdTag t-${cl}">${st}</span></div>
+   <div class="tdSub">${s(td.start_date)}～${s(td.end_date)}・${n} 個${td.weekends?'日':'上班日'}${td.p1!=null?`・完成時 ${td.p1}%`:''}</div>
+   ${td.assigned_by?`<div class="tdBy">📌 ${esc(td.assigned_by_name||td.assigned_by)} 指派${td.note?`：${esc(td.note)}`:''}</div>`:''}
+   <div class="tdAct">${td.done?'':(td.assigned_by?'':`<button type="button" data-tdedit="${td.id}">編輯</button>`)+`<button type="button" data-tddone="${td.id}">標記完成</button>`}${td.assigned_by?'':`<button type="button" data-tddel="${td.id}">刪除</button>`}</div></div>`;
+ }).join('');
+}
+/* 以「待辦清單」為準，同步今天起 120 天內每日的待辦工項：
+   ‧ 補上尚未帶入的（主管新指派 / 主管修改日期後的新日子）；已帶入過、之後被本人刪掉的不會再補回來
+   ‧ 移除今天以後「已不需要」的（待辦被刪除、已完成、或日期被改掉）；今天與過去的不動 */
+const matKey=td=>`dr:matd:${nas.prof.emp}:${td.id}`;                                   // 每個待辦只記「最近一次帶入的版本」
+const matSig=td=>[td.c,td.t,td.start_date,td.end_date,td.weekends,td.p1].join('|');
+const markMat=td=>ls.set(matKey(td),matSig(td));
+async function syncTodoRows(){
+ if(!nasReady()||tdErr)return;
+ const today=todayStr(),hz=parseD(today);hz.setDate(hz.getDate()+120);const H=fmtD(hz),cur=$('#date').value;
+ let map={};try{map=await nasRange(today,H)}catch(e){return}
+ const active=todos.filter(t=>!t.done),want={};
+ for(const td of active){const days=todoDays(td);days.forEach((d,i)=>{if(d<today||d>H)return;(want[d]=want[d]||[]).push({td,i,n:days.length})})}
+ let changed=0;
+ for(const d of [...new Set([...Object.keys(want),...Object.keys(map)])].sort()){
+  if(d<today)continue;
+  const wants=want[d]||[],ids=new Set(wants.map(w=>w.td.id));
+  const isCur=d===cur,dd=isCur?data:await loadDay(d,map[d]||null);
+  let ch=false;
+  if(d>today){const keep=dd.today.filter(r=>!r.tid||ids.has(r.tid));if(keep.length!==dd.today.length){while(keep.length<MIN_ROWS)keep.push(newT());dd.today=keep;ch=true}}
+  for(const w of wants){
+   if(ls.get(matKey(w.td))===matSig(w.td))continue;        // 這個版本的待辦已經帶入過
+   if(dd.today.some(r=>r.tid===w.td.id))continue;
+   const row={c:w.td.c,t:w.td.t,p:todoProg(w.td,w.i,w.n),r:'',tid:w.td.id};
+   const em=dd.today.find(r=>!hasItem(r));if(em)Object.assign(em,row);else dd.today.push(row);ch=true;
+  }
+  if(ch){if(isCur){renderRows();save()}else await persistDay(d,dd);changed++}
+ }
+ active.forEach(markMat);
+ if(changed){renderCal();scheduleUp();updateNextHint()}
+}
+/* 主管 / 主任新指派的任務：提示一次，並自動展開待辦卡片 */
+function noticeAssigned(){
+ const k='dr:seenAssign:'+nas.prof.emp;let seen=[];try{seen=JSON.parse(ls.get(k)||'[]')}catch(e){}
+ const fresh=todos.filter(t=>t.assigned_by&&!t.done&&!seen.includes(t.id));
+ if(!fresh.length)return;
+ $('#todoCard').open=true;
+ $('#tdBadge').textContent=`📌 新指派 ${fresh.length} 項`;
+ toast(`📌 ${fresh[0].assigned_by_name||'主管'} 指派了 ${fresh.length} 項新任務：${fresh.slice(0,2).map(t=>itemText(t)).join('、')}${fresh.length>2?' …':''}`);
+ ls.set(k,JSON.stringify([...new Set([...seen,...fresh.map(t=>t.id)])]));
+}
+/* 把一筆待辦的工項寫進範圍內每個上班日（已帶入過的日子略過） */
+async function persistDay(s,dd){
+ dd.savedAt=Date.now();ls.set(key(s),JSON.stringify(dd));filled[s]=hasContent(dd);
+ nasQ=nasQ.then(()=>writeDayJson(s,dd)).catch(e=>toast('雲端寫入失敗：'+e.message));
+}
+async function materializeTodo(td){
+ const days=todoDays(td),n=days.length,cur=$('#date').value;let added=0;
+ if(!n)return 0;
+ let map={};try{map=await nasRange(days[0],days[n-1])}catch(e){}
+ for(let i=0;i<n;i++){
+  const s=days[i],isCur=s===cur,dd=isCur?data:await loadDay(s,map[s]||null);
+  if(dd.today.some(r=>r.tid===td.id))continue;
+  const row={c:td.c,t:td.t,p:todoProg(td,i,n),r:'',tid:td.id};
+  const em=dd.today.find(r=>!hasItem(r));if(em)Object.assign(em,row);else dd.today.push(row);
+  if(isCur){renderRows();save()}else await persistDay(s,dd);
+  added++;
+ }
+ renderCal();scheduleUp();updateNextHint();
+ return added;
+}
+/* 移除「今天以後」由這筆待辦帶入的工項（已過去與今天的保留） */
+async function unmaterializeTodo(td){
+ const today=todayStr(),cur=$('#date').value,days=todoDays(td).filter(s=>s>today);
+ if(!days.length)return;
+ let map={};try{map=await nasRange(days[0],days[days.length-1])}catch(e){}
+ for(const s of days){
+  const isCur=s===cur,dd=isCur?data:await loadDay(s,map[s]||null);
+  const keep=dd.today.filter(r=>r.tid!==td.id);
+  if(keep.length===dd.today.length)continue;
+  while(keep.length<MIN_ROWS)keep.push(newT());dd.today=keep;
+  if(isCur){renderRows();save()}else await persistDay(s,dd);
+ }
+ renderCal();scheduleUp();updateNextHint();
+}
+function tdFormReset(){
+ tdEditing=null;
+ $('#tdC').value='';$('#tdT').value='';$('#tdP').value='';$('#tdW').checked=false;
+ const n=nextWorkday($('#date').value||todayStr());$('#tdS').value=n;$('#tdE').value=n;
+ $('#tdAdd').textContent='新增待辦';$('#tdCancel').hidden=true;$('#tdMsg').textContent='';
+}
+let tdBusy=false;
+async function tdSave(){
+ if(tdBusy||!tdUsable())return;
+ const c=$('#tdC').value.trim(),t=$('#tdT').value.trim(),s=$('#tdS').value,e=$('#tdE').value,w=$('#tdW').checked;
+ let p=$('#tdP').value.trim();p=p===''?null:Math.max(0,Math.min(100,Math.round(+p)));
+ if(!c&&!t){toast('請填寫案號或內容');return}
+ if(!s||!e){toast('請選擇預計開始與結束日');return}
+ if(e<s){toast('結束日不能早於開始日');return}
+ const probe={start_date:s,end_date:e,weekends:w};
+ if(!todoDays(probe).length){toast('這段期間內沒有可排的上班日（可勾選「含週末與假日」）');return}
+ tdBusy=true;$('#tdAdd').disabled=true;$('#tdMsg').textContent='處理中…';
+ try{
+  let td;
+  if(tdEditing){
+   const old=todos.find(x=>x.id===tdEditing);await unmaterializeTodo(old);
+   const{data:r,error}=await sb.from('todos').update({c,t,start_date:s,end_date:e,weekends:w,p1:p}).eq('id',tdEditing).select().single();
+   if(error)throw error;td=r;
+  }else{
+   const{data:r,error}=await sb.from('todos').insert({emp:nas.prof.emp,c,t,start_date:s,end_date:e,weekends:w,p1:p}).select().single();
+   if(error)throw error;td=r;
+  }
+  const n=await materializeTodo(td);markMat(td);
+  await loadTodos();
+  toast(`${tdEditing?'已更新':'已新增'}待辦，並帶入 ${n} 天的工項`);
+  tdFormReset();
+ }catch(err){toast('儲存失敗：'+(err.message||err));$('#tdMsg').textContent=''}
+ finally{tdBusy=false;$('#tdAdd').disabled=false}
+}
+$('#tdAdd').onclick=tdSave;
+$('#tdCancel').onclick=tdFormReset;
+document.addEventListener('click',async e=>{
+ const ed=e.target.closest('[data-tdedit]'),dn=e.target.closest('[data-tddone]'),dl=e.target.closest('[data-tddel]');
+ if(ed){
+  const td=todos.find(x=>x.id===ed.dataset.tdedit);if(!td)return;
+  tdEditing=td.id;$('#tdC').value=td.c;$('#tdT').value=td.t;$('#tdS').value=td.start_date;$('#tdE').value=td.end_date;
+  $('#tdP').value=td.p1==null?'':td.p1;$('#tdW').checked=!!td.weekends;
+  $('#tdAdd').textContent='儲存修改';$('#tdCancel').hidden=false;$('#tdMsg').textContent='編輯中：今天以後帶入的工項會依新日期重新帶入';
+  $('#tdC').scrollIntoView({block:'center'});return;
+ }
+ if(dn){
+  const td=todos.find(x=>x.id===dn.dataset.tddone);if(!td)return;
+  if(!confirm(`要把「${itemText(td)}」標記為完成嗎？\n今天以後還沒到的日子裡，這項工項會被移除；今天及過去的保留。`))return;
+  try{
+   await unmaterializeTodo(td);
+   const{error}=await sb.from('todos').update({done:true}).eq('id',td.id);if(error)throw error;
+   // 今天已帶入的那一列，進度設為 100%
+   const t=todayStr(),isCur=t===$('#date').value,dd=isCur?data:await loadDay(t);
+   const row=dd.today.find(r=>r.tid===td.id);
+   if(row&&+row.p!==100){row.p=100;if(isCur){renderRows();save()}else await persistDay(t,dd)}
+   await loadTodos();toast('已標記完成');
+  }catch(err){toast('操作失敗：'+(err.message||err))}
+  return;
+ }
+ if(dl){
+  const td=todos.find(x=>x.id===dl.dataset.tddel);if(!td)return;
+  if(!confirm(`要刪除待辦「${itemText(td)}」嗎？\n今天以後還沒到的日子裡，由它帶入的工項會一併移除；今天及過去已帶入的保留。`))return;
+  try{
+   await unmaterializeTodo(td);
+   const{error}=await sb.from('todos').delete().eq('id',td.id);if(error)throw error;
+   if(tdEditing===td.id)tdFormReset();
+   await loadTodos();toast('已刪除待辦');
+  }catch(err){toast('刪除失敗：'+(err.message||err))}
+ }
+});
+
 /* ---------- 預排多日工項 ---------- */
 const plDlg=$('#planDlg'),pl={sel:new Set(),y:0,m:0,last:null};
 function planRows(){
