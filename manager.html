@@ -48,6 +48,25 @@ dialog h3{margin:0 0 6px;font-size:16px}
 .it{border:1px solid var(--line);border-radius:8px;overflow:hidden;margin:6px 0}.it div{display:flex;gap:10px;padding:5px 10px;border-bottom:1px solid var(--line);font-size:13px}.it div:last-child{border-bottom:0}.it div span:first-child{flex:1}
 .sec{margin:8px 0}.sec b{display:block;font-size:12px;color:var(--mute);margin-bottom:2px}.sec pre{margin:0;white-space:pre-wrap;font:inherit;background:var(--bg);border-radius:6px;padding:6px 10px}
 .mute{color:var(--mute)}
+/* 矩陣上的特殊事項標記：右上角橘點；預算調整缺批註單：紅點 */
+table.mx td.c.hasSp{position:relative}
+table.mx td.c.hasSp::after{content:"";position:absolute;top:2px;right:2px;width:7px;height:7px;border-radius:50%;background:#e8590c}
+table.mx td.c.bm::after{background:#d6336c;box-shadow:0 0 0 2px #ffd6e7}
+/* 特殊事項清單 */
+.spchip{display:inline-block;margin:2px 4px 2px 0;padding:2px 10px;border-radius:14px;border:1px solid var(--line);font-size:12px;cursor:pointer;background:var(--card)}
+.spchip.on{background:var(--pri);border-color:var(--pri);color:#fff}
+.bmchip{border-color:#d6336c;color:#d6336c}.bmchip.on{background:#d6336c;color:#fff}
+.splist{max-height:50vh;overflow:auto;border:1px solid var(--line);border-radius:8px;margin-top:8px}
+.spr{display:flex;gap:10px;align-items:baseline;padding:6px 10px;border-bottom:1px solid var(--line);cursor:pointer;font-size:13px}
+.spr:last-child{border-bottom:0}.spr:hover{background:var(--bg)}
+.spr .sd{flex:none;width:40px;color:var(--mute)}.spr .sn{flex:none;width:64px;font-weight:600}
+.spr .stx{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.spr .stx.mute{color:var(--mute)}
+.bmw{flex:none;color:#d6336c;font-size:12px;font-weight:600}
+.tag{flex:none;display:inline-block;padding:0 8px;border-radius:10px;font-size:11px;white-space:nowrap;background:var(--bg);border:1px solid var(--line)}
+.tag.sp-cust{background:#dbe9fb;color:#133c78}.tag.sp-budget{background:#ffe3c2;color:#6b3300}.tag.sp-award{background:#e9defc;color:#3b1f78}
+.tag.sp-bill{background:#d9f2e3;color:#14532d}.tag.sp-qa{background:#cdeff2;color:#0b4a52}.tag.sp-hse{background:#fbd5d0;color:#7a1c12}
+.tag.sp-abn{background:#ffd9a8;color:#6b3300}.tag.sp-sug{background:#e6e8ec;color:#3a4350}
+@media (max-width:640px){.spr{flex-wrap:wrap}.spr .stx{flex-basis:100%;white-space:normal}}
 </style>
 </head>
 <body>
@@ -86,6 +105,7 @@ dialog h3{margin:0 0 6px;font-size:16px}
     <span>加班：<i class="lv1">46</i><i class="lv2">60</i><i class="lv3">80</i><i class="lv4">100</i> 小時以上</span>
    </div>
   </section>
+  <section class="card" id="spCard"></section>
  </div>
 </main>
 
@@ -279,9 +299,11 @@ function compute(){
   const cells=days.map(d=>{
    const r=rec[d],has=!!(r&&hasContent(r)),w=isWork(d);
    if(has){const h=otHours(r.f,d);ot+=h;
-    if(r.f&&r.f.leave){leave+=r.f.leave.part==='全天'?1:.5;if(w)done+= r.f.leave.part==='全天'?0:1;return{d,st:'leave',h}}
-    if(!w)return{d,st:'ot',h};
-    done++;return{d,st:'done',h}}
+    const sp=SPECIAL_LIST.filter(([k])=>secHas(r.f||{},k)).map(x=>x[0]);                       // 當天「實際有填」的特殊事項
+    const bm=((r.f&&r.f.budgets)||[]).some(b=>(tx(b.no)||b.t1||b.t2||tx(b.why))&&!(b.files&&b.files.length));  // 預算調整缺異常批註單
+    if(r.f&&r.f.leave){leave+=r.f.leave.part==='全天'?1:.5;if(w)done+= r.f.leave.part==='全天'?0:1;return{d,st:'leave',h,sp,bm}}
+    if(!w)return{d,st:'ot',h,sp,bm};
+    done++;return{d,st:'done',h,sp,bm}}
    if(!w)return{d,st:'off',h:0};
    if(start==null||d<start)return{d,st:'na',h:0};
    if(d>=today)return{d,st:'future',h:0};
@@ -289,7 +311,8 @@ function compute(){
    if(age>3){late++;return{d,st:'late',h:0}}
    pend++;return{d,st:'pend',h:0};
   });
-  return{p,cells,ot,done,late,pend,leave,start};
+  const spDays=cells.filter(c=>c.sp&&c.sp.length).length,bmCount=cells.filter(c=>c.bm).length;
+  return{p,cells,ot,done,late,pend,leave,start,spDays,bmCount};
  });
 }
 const lvOf=h=>(OT_LV.find(([t])=>h>t)||[0,0])[1];
@@ -305,21 +328,52 @@ function render(){
  if(sort==='ot')L=[...L].sort((a,b)=>b.ot-a.ot);else if(sort==='late')L=[...L].sort((a,b)=>b.late-a.late||b.pend-a.pend);
  // 警示
  const over=rowsData.filter(r=>lvOf(r.ot)>0).sort((a,b)=>b.ot-a.ot),lates=rowsData.filter(r=>r.late>0).sort((a,b)=>b.late-a.late);
+ const bms=rowsData.filter(r=>r.bmCount>0);
  const chip=(r,txt,cls)=>`<span class="chip ${cls||''}" data-emp="${esc(r.p.emp)}">${esc(r.p.name)}　${txt}</span>`;
  $('#alerts').innerHTML=`<h2>🔔 需要注意</h2>`+
-  (over.length||lates.length?
+  (over.length||lates.length||bms.length?
    `${over.length?`<div class="note">加班時數超出 46 小時（本期）</div><div class="chips">${over.map(r=>chip(r,Math.round(r.ot*10)/10+' 小時','lv'+lvOf(r.ot))).join('')}</div>`:''}
-    ${lates.length?`<div class="note">超過 3 天未填日報</div><div class="chips">${lates.map(r=>chip(r,r.late+' 天','lv3')).join('')}</div>`:''}`
-   :'<div class="note">目前沒有加班超標或逾期未填的人員 ✓</div>');
+    ${lates.length?`<div class="note">超過 3 天未填日報</div><div class="chips">${lates.map(r=>chip(r,r.late+' 天','lv3')).join('')}</div>`:''}
+    ${bms.length?`<div class="note">預算調整尚未附「異常批註單」（依規定須先有批註單）</div><div class="chips">${bms.map(r=>chip(r,r.bmCount+' 天','lv3')).join('')}</div>`:''}`
+   :'<div class="note">目前沒有加班超標、逾期未填或缺批註單的人員 ✓</div>');
  // 矩陣
  const days=daysOf(period),WDN='日一二三四五六';
- const head=`<thead><tr><th class="nm">人員</th>${days.map(d=>{const w=isWork(d);return`<th class="${w?'':'off'}" title="${d}${offName(d)?' '+esc(offName(d)):''}">${+d.slice(8)}<small>${WDN[parseD(d).getDay()]}</small></th>`}).join('')}<th class="sum">已填</th><th class="sum">缺</th><th class="sum">請假</th><th class="sum">加班(h)</th></tr></thead>`;
+ const head=`<thead><tr><th class="nm">人員</th>${days.map(d=>{const w=isWork(d);return`<th class="${w?'':'off'}" title="${d}${offName(d)?' '+esc(offName(d)):''}">${+d.slice(8)}<small>${WDN[parseD(d).getDay()]}</small></th>`}).join('')}<th class="sum">已填</th><th class="sum">缺</th><th class="sum">請假</th><th class="sum">特殊</th><th class="sum">加班(h)</th></tr></thead>`;
  const body=L.map(r=>{
   const lv=lvOf(r.ot);
-  return`<tr><td class="nm">${esc(r.p.name)}<small>${esc(r.p.emp)}</small></td>${r.cells.map(c=>`<td class="c st-${c.st}" data-emp="${esc(r.p.emp)}" data-date="${c.d}" title="${c.d}">${SYM[c.st]}</td>`).join('')}
-   <td class="sum">${r.done}</td><td class="sum ${r.late?'st-late':''}">${r.late+r.pend||''}</td><td class="sum">${r.leave||''}</td><td class="sum lv${lv}"><b>${Math.round(r.ot*10)/10}</b></td></tr>`}).join('');
+  return`<tr><td class="nm">${esc(r.p.name)}<small>${esc(r.p.emp)}</small></td>${r.cells.map(c=>{const has=c.sp&&c.sp.length,tip=has?' ・特殊事項：'+c.sp.map(k=>SPL[k]).join('、')+(c.bm?'（⚠ 預算調整缺異常批註單）':''):'';
+     return`<td class="c st-${c.st}${has?' hasSp':''}${c.bm?' bm':''}" data-emp="${esc(r.p.emp)}" data-date="${c.d}" title="${c.d}${tip}">${SYM[c.st]}</td>`}).join('')}
+   <td class="sum">${r.done}</td><td class="sum ${r.late?'st-late':''}">${r.late+r.pend||''}</td><td class="sum">${r.leave||''}</td><td class="sum">${r.spDays?`<b style="color:#e8590c">${r.spDays}</b>`:''}</td><td class="sum lv${lv}"><b>${Math.round(r.ot*10)/10}</b></td></tr>`}).join('');
  $('#mx').innerHTML=head+`<tbody>${body}</tbody>`;
+ renderSpecial(L);
 }
+
+/* ---------- 特殊事項清單：本期內有人實際填寫的客戶協定 / 預算調整 / 專案發包 / 案件請款 / 品質 / 工安 / 異常 / 建議 ---------- */
+let spFilter='';
+function renderSpecial(L){
+ const entries=[];
+ for(const r of L)for(const c of r.cells){
+  if(!c.sp||!c.sp.length)continue;
+  const rec=(byEmp[r.p.emp]||{})[c.d];if(!rec)continue;
+  for(const k of c.sp)entries.push({p:r.p,date:c.d,k,text:secOut(rec.f||{},k),bm:k==='budget'&&c.bm});
+ }
+ const cnt={};SPECIAL_LIST.forEach(([k])=>cnt[k]=0);entries.forEach(e=>cnt[e.k]++);
+ const bmN=entries.filter(e=>e.bm).length;
+ const chips=`<span class="spchip ${spFilter===''?'on':''}" data-sp="">全部 ${entries.length}</span>`+
+  SPECIAL_LIST.map(([k,t])=>`<span class="spchip sp-${k} ${spFilter===k?'on':''}" data-sp="${k}">${t} ${cnt[k]}</span>`).join('')+
+  (bmN?`<span class="spchip bmchip ${spFilter==='__bm'?'on':''}" data-sp="__bm">⚠ 預算調整缺批註單 ${bmN}</span>`:'');
+ const list=entries.filter(e=>!spFilter||(spFilter==='__bm'?e.bm:e.k===spFilter)).sort((a,b)=>b.date.localeCompare(a.date)||a.p.emp.localeCompare(b.p.emp));
+ const s=x=>`${+x.slice(5,7)}/${+x.slice(8)}`;
+ const rows=list.slice(0,300).map(e=>`<div class="spr" data-emp="${esc(e.p.emp)}" data-date="${e.date}">
+   <span class="sd">${s(e.date)}</span><span class="sn">${esc(e.p.name)}</span><span class="tag sp-${e.k}">${SPL[e.k]}</span>
+   <span class="stx${e.text===NONE?' mute':''}">${esc(e.text.replace(/\n+/g,' ／ ').slice(0,110))}</span>${e.bm?'<span class="bmw">⚠ 缺異常批註單</span>':''}</div>`).join('');
+ $('#spCard').innerHTML=`<h2 style="margin:0 0 6px">📌 特殊事項（本期有填寫）</h2><div class="chips">${chips}</div>`+
+  (list.length?`<div class="splist">${rows}</div>${list.length>300?`<div class="note">僅顯示最近 300 筆</div>`:''}`:'<div class="note" style="margin:8px 0">這一期沒有符合的特殊事項。</div>');
+}
+document.addEventListener('click',e=>{
+ const c=e.target.closest('.spchip');if(c){spFilter=c.dataset.sp;render();return}
+ const r=e.target.closest('.spr');if(r)openDay(r.dataset.emp,r.dataset.date);
+});
 document.addEventListener('click',e=>{
  const c=e.target.closest('td.c');if(c){openDay(c.dataset.emp,c.dataset.date);return}
  const ch=e.target.closest('.chip');if(ch){const el=document.querySelector(`td.nm small`);$('#q').value=ch.dataset.emp;render()}
@@ -351,6 +405,7 @@ function openDay(emp,date){
  $('#dayDlg').showModal();
 }
 const SPECIAL_LIST=[['cust','客戶協定內容'],['budget','預算調整'],['award','專案發包'],['bill','案件請款'],['qa','品質查核紀錄'],['hse','工安查核紀錄'],['abn','異常說明'],['sug','建議事項']];
+const SPL=Object.fromEntries(SPECIAL_LIST);
 $('#dayBody').addEventListener('click',e=>{const b=e.target.closest('[data-f]');if(b)openStored(dlgFiles[+b.dataset.f])});
 $('#dayClose').onclick=()=>$('#dayDlg').close();
 
