@@ -62,6 +62,7 @@ dialog h3{margin:0 0 6px;font-size:16px}
 .atk .t1{font-weight:600}.atk .t2{font-size:12px;color:var(--mute);margin:2px 0 4px}.atk .t3{font-size:12px;color:#7a4b00;margin-bottom:4px}
 .atk .who{display:inline-block;margin:2px 4px 2px 0;padding:0 8px;border-radius:10px;font-size:12px;border:1px solid var(--line)}
 .atk .who.d{background:#d9f2e3;color:#14532d}.atk .who.r{background:#fff0c9;color:#6b4a00}
+.atk.alldone{opacity:.7}
 .atk .act{display:flex;gap:6px;margin-top:6px}.atk .act button{padding:2px 10px;font-size:12px}
 /* 矩陣上的特殊事項標記：右上角橘點；預算調整缺批註單：紅點 */
 table.mx td.c.hasSp{position:relative}
@@ -504,12 +505,12 @@ function renderAssigned(){
  for(const t of myTasks){const k=[t.c,t.t,t.start_date,t.end_date,t.weekends,t.p1,t.note].join('|');(groups.get(k)||groups.set(k,[]).get(k)).push(t)}
  const s=x=>`${+x.slice(5,7)}/${+x.slice(8)}`,nm=Object.fromEntries(people.map(p=>[p.emp,p.name]));
  box.innerHTML=[...groups.values()].sort((a,b)=>b[0].start_date.localeCompare(a[0].start_date)).map(g=>{
-  const t=g[0],done=g.filter(x=>x.done).length;
-  return`<div class="atk"><div class="t1">${esc(itemText(t))||'（未命名）'}</div>
+  const t=g[0],done=g.filter(x=>x.done).length,left=g.filter(x=>!x.done).map(x=>x.id);
+  return`<div class="atk${left.length?'':' alldone'}"><div class="t1">${esc(itemText(t))||'（未命名）'}${left.length?'':' <span class="who d">全部完成</span>'}</div>
    <div class="t2">${s(t.start_date)}～${s(t.end_date)}${t.weekends?'・含週末':''}${t.p1!=null?`・完成時 ${t.p1}%`:''}・完成 ${done} / ${g.length} 人</div>
    ${t.note?`<div class="t3">備註：${esc(t.note)}</div>`:''}
    <div>${g.map(x=>`<span class="who ${x.done?'d':'r'}">${esc(nm[x.emp]||x.emp)}${x.done?' ✓完成':' 進行中'}</span>`).join('')}</div>
-   <div class="act"><button type="button" data-aedit="${g.map(x=>x.id).join(',')}">編輯</button><button type="button" data-adel="${g.map(x=>x.id).join(',')}">刪除</button></div></div>`}).join('');
+   <div class="act">${left.length?`<button type="button" class="pri" data-adone="${left.join(',')}">標記完成${g.length>1?`（${left.length} 人）`:''}</button><button type="button" data-aedit="${g.map(x=>x.id).join(',')}">編輯</button>`:''}<button type="button" data-adel="${g.map(x=>x.id).join(',')}">刪除</button></div></div>`}).join('');
 }
 async function asgSave(){
  if(asgBusy)return;
@@ -535,7 +536,14 @@ async function asgSave(){
 }
 $('#aAdd').onclick=asgSave;$('#aCancel').onclick=asgForm;
 document.addEventListener('click',async e=>{
- const ed=e.target.closest('[data-aedit]'),dl=e.target.closest('[data-adel]');
+ const ed=e.target.closest('[data-aedit]'),dl=e.target.closest('[data-adel]'),dn=e.target.closest('[data-adone]');
+ if(dn){
+  const ids=dn.dataset.adone.split(','),t=myTasks.find(x=>x.id===ids[0]);if(!t)return;
+  if(!confirm(`要把任務「${itemText(t)}」標記為完成嗎？（${ids.length} 位尚未完成的下屬會一併標記完成）\n工程師下次打開網頁時，今天以後還沒到的日子裡這項工項會被移除；今天與過去的保留。`))return;
+  const{error}=await sb.from('todos').update({done:true}).in('id',ids);
+  if(error){toast('操作失敗：'+error.message);return}
+  toast('已標記完成');await loadAssigned();return;
+ }
  if(ed){
   const ids=ed.dataset.aedit.split(','),t=myTasks.find(x=>x.id===ids[0]);if(!t)return;
   asgEdit=ids;asgSel=new Set(myTasks.filter(x=>ids.includes(x.id)).map(x=>x.emp));
