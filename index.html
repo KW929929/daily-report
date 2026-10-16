@@ -25,11 +25,11 @@ textarea{resize:vertical;min-height:64px}
 .pctw{display:flex;gap:4px;align-items:center;min-width:0}.pctw .pct{flex:1;min-width:0}
 button.fin{padding:6px 8px;font-size:12px;color:var(--ok);border-color:var(--ok);white-space:nowrap}
 button.fin:hover{background:var(--ok);color:#fff}
-.row{display:grid;grid-template-columns:28px 150px 1.4fr 150px 1fr 32px;gap:8px;align-items:center;margin-bottom:8px}
+.row{display:grid;grid-template-columns:28px 190px 1.4fr 150px 1fr 32px;gap:8px;align-items:center;margin-bottom:8px}
 .row.t{grid-template-columns:28px 150px 1fr 150px 32px}
 .row .n{color:var(--mute);text-align:center;font-size:12px}
 .pct{position:relative}.pct input{padding-right:24px;text-align:right}.pct::after{content:"%";position:absolute;right:9px;top:50%;transform:translateY(-50%);color:var(--mute)}
-.colh{display:grid;grid-template-columns:28px 150px 1.4fr 150px 1fr 32px;gap:8px;font-size:12px;color:var(--mute);margin-bottom:4px}
+.colh{display:grid;grid-template-columns:28px 190px 1.4fr 150px 1fr 32px;gap:8px;font-size:12px;color:var(--mute);margin-bottom:4px}
 .colh.t{grid-template-columns:28px 150px 1fr 150px 32px}
 button{font:inherit;cursor:pointer;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:6px;padding:6px 12px}
 button:hover{border-color:var(--pri)}
@@ -166,7 +166,7 @@ dialog h3{margin:0 0 8px;font-size:16px}
 }
 .lgErr{color:var(--bad);font-size:13px;margin:6px 0;min-height:1em}.lgshow{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--mute);margin-top:6px}.lgshow input{width:auto}
 .lgrow{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap}.lgrow .f{flex:1;min-width:200px}
-.todoform{display:grid;gap:8px;grid-template-columns:150px 1fr 140px 140px 160px auto;align-items:end}
+.todoform{display:grid;gap:8px;grid-template-columns:200px 1fr 140px 140px 160px auto;align-items:end}
 .tdW{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--mute);padding-bottom:8px;white-space:nowrap}.tdW input{width:auto}
 @media (max-width:760px){.todoform{grid-template-columns:1fr 1fr}.todoform label.f:nth-child(2){grid-column:1/-1}}
 .tdBadge{margin-left:auto;font-size:12px;color:var(--pri);font-weight:400}
@@ -177,6 +177,18 @@ dialog h3{margin:0 0 8px;font-size:16px}
 .tdTag{font-size:11px;padding:0 8px;border-radius:10px;border:1px solid var(--line)}
 .t-run{background:#d9f2e3;color:#14532d}.t-late{background:#fbd5d0;color:#7a1c12}.t-plan{background:#dbe9fb;color:#133c78}.t-done{background:var(--line);color:var(--mute)}
 .td-done{opacity:.65}
+#assignCard{border:2px solid #f08c00;background:linear-gradient(#fff8e6,var(--card) 70%)}
+@media (prefers-color-scheme:dark){#assignCard{background:linear-gradient(#3b2d0c,var(--card) 70%)}}
+.as{border:1px solid var(--line);border-left:6px solid #f08c00;border-radius:8px;padding:10px 12px;margin-top:8px;background:var(--card)}
+.as.as-late{border-left-color:#d6336c}.as.as-plan{border-left-color:#4c8be0}
+.asTop{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.asT{font-size:16px}
+.asNew{background:#d6336c;color:#fff;border-radius:10px;padding:0 8px;font-size:11px;font-weight:700}
+.asBy{font-size:12px;color:var(--mute);margin:4px 0}
+.asNote{background:#fff3d6;color:#5c3b00;border-radius:6px;padding:6px 10px;font-size:14px;margin:6px 0;line-height:1.6}
+@media (prefers-color-scheme:dark){.asNote{background:#4a3a10;color:#ffe8a8}}
+.asAct{margin-top:6px}.asAct button{padding:3px 14px;font-size:13px}
+.asDone{margin-top:10px;font-size:13px;color:var(--mute)}.asDone summary{cursor:pointer}
+.asDoneRow{padding:2px 0 2px 12px}.asDoneRow span{font-size:12px}
 .tdBy{font-size:12px;color:#7a4b00;background:#fff3d6;border-radius:6px;padding:2px 8px;margin:0 0 6px;display:inline-block}
 @media (prefers-color-scheme:dark){.tdBy{background:#4a3a10;color:#ffe8a8}}
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#222;color:#fff;padding:8px 16px;border-radius:20px;font-size:13px;opacity:0;transition:.2s;pointer-events:none}
@@ -224,6 +236,11 @@ dialog h3{margin:0 0 8px;font-size:16px}
  </section>
 
 <div id="form" class="locked">
+ <section class="card" id="assignCard" hidden>
+  <h2>📌 主管交辦事項 <span class="hint" id="asHint"></span></h2>
+  <div id="asList"></div>
+ </section>
+
  <section class="card" id="alertCard" hidden>
   <h2>🔔 提醒與警示</h2>
   <div id="alOt"></div>
@@ -273,7 +290,7 @@ dialog h3{margin:0 0 8px;font-size:16px}
   <summary><b>待辦事項</b><span class="hint">（填入預計開始與結束日，系統會自動帶入每天的工項）</span><span class="tdBadge" id="tdBadge"></span></summary>
   <div class="body">
    <div class="todoform">
-    <label class="f">案號<input id="tdC" list="cases" placeholder="P000000000"></label>
+    <label class="f">案號／工種／廠商別<input id="tdC" list="cases" placeholder="例：P260800100 或 配管工程 或 XX機電"></label>
     <label class="f">內容<input id="tdT" placeholder="例：配管工程、業主週會"></label>
     <label class="f">預計開始<input id="tdS" type="date"></label>
     <label class="f">預計結束<input id="tdE" type="date"></label>
@@ -287,7 +304,7 @@ dialog h3{margin:0 0 8px;font-size:16px}
 
  <section class="card hideOnLeave">
   <h2>今日工作主要工項<span class="hint">也可先切到下一個上班日預先填寫，進度先填預估值</span></h2>
-  <div class="colh"><span></span><span>案號</span><span>工作記事</span><span>進度</span><span>備註（異常說明）</span><span></span></div>
+  <div class="colh"><span></span><span>案號／工種／廠商別</span><span>工作記事</span><span>進度</span><span>備註（異常說明）</span><span></span></div>
   <div id="todayRows"></div>
   <div class="bar" style="margin-top:6px">
    <button class="add" id="addToday" style="flex:1">＋ 新增工項</button>
@@ -354,10 +371,11 @@ dialog h3{margin:0 0 8px;font-size:16px}
  <h3>本日請假</h3>
  <div class="grid">
   <label class="f">假別<select id="leType"><option>特休</option><option>事假</option><option>病假</option><option>公假</option><option>補休</option><option>喪假</option><option>婚假</option><option>其他</option></select></label>
-  <label class="f">時段<select id="lePart"><option>全天</option><option>上午</option><option>下午</option></select></label>
+  <label class="f">時段<select id="lePart"><option>全天</option><option>上午</option><option>下午</option><option value="時數">指定時數</option></select></label>
  </div>
+ <div id="leHoursBox" style="display:none;margin-top:10px"><label class="f">請假時數（0.5 小時為單位，最多 8 小時）<input id="leHours" type="number" min="0.5" max="8" step="0.5" value="2" inputmode="decimal"></label></div>
  <label class="f" style="margin-top:10px">備註<input id="leNote" placeholder="例：代理人、事由（選填）"></label>
- <div class="note" style="margin-top:8px">選「全天」時，今日工項與各欄位會自動收起，不用填寫。</div>
+ <div class="note" style="margin-top:8px">選「全天」或請滿 8 小時時，今日工項與各欄位會自動收起，不用填寫；請假時數只做紀錄，不影響日報填寫與加班計算。</div>
  <div class="bar" style="justify-content:flex-end;margin-top:12px"><button type="button" id="leCancel">取消</button><button type="button" id="leOk" class="pri">確定</button></div>
 </dialog><dialog id="otDlg">
  <h3 id="otDlgT">⚠ 加班時數警告</h3>
@@ -370,9 +388,9 @@ dialog h3{margin:0 0 8px;font-size:16px}
  <div class="bar" style="justify-content:flex-end;margin-top:12px"><button type="button" id="pwCancel">取消</button><button type="button" id="pwOk" class="pri">變更</button></div>
 </dialog><dialog id="planDlg">
  <h3>預排多日工項</h3>
- <div class="note" style="margin-bottom:10px">例：10/19～10/30 執行配管工程。① 填案號、工作記事與進度範圍；② 在日曆選好要排入的日期，系統會依「開工前進度 → 完成時進度」把預計進度平均分配到每一天。已有相同「案號_工作記事」的日子只會更新進度。</div>
+ <div class="note" style="margin-bottom:10px">例：10/19～10/30 執行配管工程。① 填案號（或工種／廠商別）、工作記事與進度範圍；② 在日曆選好要排入的日期，系統會依「開工前進度 → 完成時進度」把預計進度平均分配到每一天。已有相同「案號_工作記事」的日子只會更新進度。</div>
  <div class="grid">
-  <label class="f">案號<input id="plC" list="cases" placeholder="P000000000"></label>
+  <label class="f">案號／工種／廠商別<input id="plC" list="cases" placeholder="例：P260800100 或 配管工程"></label>
   <label class="f">工作記事<input id="plT" placeholder="例：配管工程"></label>
   <label class="f">開工前進度 %<input type="number" id="plP0" min="0" max="100" value="0"></label>
   <label class="f">完成時進度 %<input type="number" id="plP1" min="0" max="100" value="100"></label>
@@ -403,9 +421,12 @@ function blank(){return{today:Array.from({length:MIN_ROWS},newT),f:{}}}
 const itemText=r=>{const c=(r.c||'').trim(),t=(r.t||'').trim();return c&&t?`${c}_${t}`:(c||t)};
 const hasItem=r=>!!itemText(r);
 /* 本日請假：f.leave = {type, part(全天/上午/下午), note} */
-const leaveText=f=>f&&f.leave?`本日請假（${f.leave.type}${f.leave.part&&f.leave.part!=='全天'?'・'+f.leave.part:''}）${f.leave.note&&f.leave.note.trim()?'　'+f.leave.note.trim():''}`:'';
-const leaveFull=f=>!!(f&&f.leave&&f.leave.part==='全天');
-const leaveShort=f=>f&&f.leave?`${f.leave.type}${f.leave.part&&f.leave.part!=='全天'?'('+f.leave.part+')':''}`:'';
+const leaveHours=l=>l.part==='全天'?8:l.part==='時數'?(+l.hours||0):4;           // 上午 / 下午 = 4 小時
+const leaveDesc=l=>l.part==='全天'?'':l.part==='時數'?`${+l.hours||0} 小時`:l.part;
+const leaveText=f=>f&&f.leave?`本日請假（${f.leave.type}${leaveDesc(f.leave)?'・'+leaveDesc(f.leave):''}）${f.leave.note&&f.leave.note.trim()?'　'+f.leave.note.trim():''}`:'';
+const leaveFull=f=>!!(f&&f.leave&&leaveHours(f.leave)>=8);                       // 全天，或請滿 8 小時
+const leaveDayCount=l=>Math.min(1,leaveHours(l)/8);                              // 換算成「天」
+const leaveShort=f=>f&&f.leave?`${f.leave.type}${f.leave.part==='全天'?'':f.leave.part==='時數'?`(${+f.leave.hours||0}h)`:`(${f.leave.part})`}`:'';
 /* 輸出用的工項清單：請假列在最前面，後面接有填的工項 */
 const listItems=dd=>(dd.f&&dd.f.leave?[{c:'',t:leaveText(dd.f),p:'',r:''}]:[]).concat((dd.today||[]).filter(hasItem));
 /* 舊資料（整串「P…_內容」存在 t）自動拆成案號 + 內容 */
@@ -481,8 +502,8 @@ function caseList(){
 function renderRows(){
  const inp=(a,i,k,v,cls,ph,extra='')=>`<input class="${cls}" data-a="${a}" data-i="${i}" data-k="${k}" value="${esc(v)}" placeholder="${ph}" ${extra}>`;
  const pct=(a,i,v)=>`<div class="pctw"><div class="pct"><input type="number" min="0" max="100" inputmode="numeric" data-a="${a}" data-i="${i}" data-k="p" value="${esc(v)}"></div><button type="button" class="fin" data-done="${a}" data-i="${i}" title="進度設為 100%">完成</button></div>`;
- $('#todayRows').innerHTML=data.today.map((r,i)=>`<div class="row"><span class="n">${i+1}</span>
-  ${inp('today',i,'c',r.c,'c','案號 P000000000','list="cases"')}${inp('today',i,'t',r.t,'tx','工作記事')}${pct('today',i,r.p)}
+ $('#todayRows').innerHTML=data.today.map((r,i)=>`<div class="row"><span class="n">${rowMark(r,i)}</span>
+  ${inp('today',i,'c',r.c,'c','案號／工種／廠商別','list="cases"')}${inp('today',i,'t',r.t,'tx','工作記事')}${pct('today',i,r.p)}
   ${inp('today',i,'r',r.r,'rk','備註（異常說明）')}
   <button class="x" data-del="today" data-i="${i}" title="刪除">✕</button></div>`).join('');
  let dl=$('#cases');if(!dl){dl=document.createElement('datalist');dl.id='cases';document.body.appendChild(dl)}
@@ -1151,15 +1172,20 @@ function renderLeave(){
 function openLeave(){
  const L=data.f.leave||{type:'特休',part:'全天',note:''};
  $('#leType').value=L.type;$('#lePart').value=L.part;$('#leNote').value=L.note||'';
+ $('#leHours').value=L.hours||2;toggleLeHours();
  $('#leaveDlg').showModal();
 }
+function toggleLeHours(){$('#leHoursBox').style.display=$('#lePart').value==='時數'?'':'none'}
+$('#lePart').addEventListener('change',toggleLeHours);
 $('#chkLeave').onchange=e=>{
  if(e.target.checked)openLeave();
  else{delete data.f.leave;renderLeave();save()}
 };
 document.addEventListener('click',e=>{if(e.target.closest('[data-leedit]'))openLeave()});
 $('#leOk').onclick=()=>{
- data.f.leave={type:$('#leType').value,part:$('#lePart').value,note:$('#leNote').value.trim()};
+ const part=$('#lePart').value;let hours;
+ if(part==='時數'){hours=Math.round((+$('#leHours').value||0)*2)/2;if(hours<0.5||hours>8){toast('請假時數請填 0.5～8 小時（以 0.5 小時為單位）');return}}
+ data.f.leave={type:$('#leType').value,part,note:$('#leNote').value.trim()};if(part==='時數')data.f.leave.hours=hours;
  $('#leaveDlg').close();renderLeave();save();
 };
 $('#leCancel').onclick=()=>{$('#leaveDlg').close();renderLeave()};   // 取消：維持原本狀態（新勾選的會還原成未勾）
@@ -1290,17 +1316,19 @@ async function loadTodos(){
  if(error){tdErr=/relation|schema cache|does not exist|PGRST205/i.test(error.message)?'尚未啟用待辦功能：管理員需先在資料庫執行「更新_待辦事項.sql」。':'讀取待辦失敗：'+error.message;todos=[]}
  else{tdErr='';todos=r||[]}
  renderTodos();
- if(!tdErr){await syncTodoRows();noticeAssigned()}
+ if(!tdErr){await syncTodoRows();noticeAssigned();renderRows()}
 }
 function renderTodos(){
  const box=$('#tdList');if(!box)return;
- const open=todos.filter(t=>!t.done).length;
+ renderAssignTop();
+ const mine=todos.filter(t=>!t.assigned_by);
+ const open=mine.filter(t=>!t.done).length;
  $('#tdBadge').textContent=open?`${open} 項進行中 / 未完成`:'';
  if(tdErr){box.innerHTML=`<div class="err" style="color:var(--bad);margin-top:8px">⚠ ${esc(tdErr)}</div>`;return}
- if(!todos.length){box.innerHTML='<div class="note" style="margin-top:10px">還沒有待辦事項。填寫上方欄位後按「新增待辦」。</div>';return}
+ if(!mine.length){box.innerHTML='<div class="note" style="margin-top:10px">還沒有自己新增的待辦事項。填寫上方欄位後按「新增待辦」。（主管交辦的事項顯示在頁面最上方）</div>';return}
  const s=x=>`${+x.slice(5,7)}/${+x.slice(8)}`;
  const order={run:0,late:1,plan:2,done:3};
- const L=[...todos].sort((a,b)=>order[todoStatus(a)[1]]-order[todoStatus(b)[1]]||a.start_date.localeCompare(b.start_date));
+ const L=[...mine].sort((a,b)=>order[todoStatus(a)[1]]-order[todoStatus(b)[1]]||a.start_date.localeCompare(b.start_date));
  box.innerHTML=L.map(td=>{
   const[st,cl]=todoStatus(td),n=todoDays(td).length;
   return`<div class="td td-${cl}"><div class="tdMain"><b>${esc(itemText(td))||'（未命名）'}</b>
@@ -1340,13 +1368,38 @@ async function syncTodoRows(){
  active.forEach(markMat);
  if(changed){renderCal();scheduleUp();updateNextHint()}
 }
-/* 主管 / 主任新指派的任務：提示一次，並自動展開待辦卡片 */
+/* 主管 / 主任交辦事項：顯示在頁面最上方，清楚列出內容、期間與主管的要求 */
+let newAssign=new Set();
+function renderAssignTop(){
+ const card=$('#assignCard');if(!card)return;
+ const L=(typeof todos!=='undefined'?todos:[]).filter(t=>t.assigned_by);
+ if(tdErr||!L.length){card.hidden=true;return}
+ card.hidden=false;
+ const act=L.filter(t=>!t.done),done=L.filter(t=>t.done);
+ const order={late:0,run:1,plan:2};
+ act.sort((a,b)=>order[todoStatus(a)[1]]-order[todoStatus(b)[1]]||a.end_date.localeCompare(b.end_date));
+ const s=x=>`${+x.slice(5,7)}/${+x.slice(8)}`;
+ $('#asHint').textContent=act.length?`共 ${act.length} 項待完成`:'目前沒有待完成的交辦事項 ✓';
+ const item=td=>{
+  const[st,cl]=todoStatus(td),n=todoDays(td).length;
+  return`<div class="as as-${cl}">
+   <div class="asTop"><b class="asT">${esc(itemText(td))||'（未命名）'}</b>${newAssign.has(td.id)?'<span class="asNew">NEW</span>':''}<span class="tdTag t-${cl}">${st}</span></div>
+   <div class="asBy">👤 ${esc(td.assigned_by_name||td.assigned_by)} 交辦・${s(td.start_date)}～${s(td.end_date)}・${n} 個${td.weekends?'日':'上班日'}${td.p1!=null?`・完成時進度 ${td.p1}%`:''}</div>
+   ${td.note?`<div class="asNote"><b>主管要求：</b>${esc(td.note)}</div>`:''}
+   <div class="asAct"><button type="button" class="pri" data-tddone="${td.id}">標記完成</button></div></div>`;
+ };
+ $('#asList').innerHTML=act.map(item).join('')+
+  (done.length?`<details class="asDone"><summary>已完成 ${done.length} 項</summary>${done.map(td=>`<div class="asDoneRow">✓ ${esc(itemText(td))}<span>（${esc(td.assigned_by_name||'')}・${s(td.start_date)}～${s(td.end_date)}）</span></div>`).join('')}</details>`:'');
+}
+/* 今日工項那一列若來自主管交辦，列號改顯示 📌 */
+const rowMark=(r,i)=>{const td=r.tid&&typeof todos!=='undefined'&&todos.find(x=>x.id===r.tid);return td&&td.assigned_by?`<span title="主管交辦：${esc(td.assigned_by_name||'')}">📌</span>`:i+1};
+/* 主管 / 主任新指派的任務：提示一次 */
 function noticeAssigned(){
  const k='dr:seenAssign:'+nas.prof.emp;let seen=[];try{seen=JSON.parse(ls.get(k)||'[]')}catch(e){}
  const fresh=todos.filter(t=>t.assigned_by&&!t.done&&!seen.includes(t.id));
+ newAssign=new Set(fresh.map(t=>t.id));renderAssignTop();
  if(!fresh.length)return;
- $('#todoCard').open=true;
- $('#tdBadge').textContent=`📌 新指派 ${fresh.length} 項`;
+ window.scrollTo({top:0,behavior:'smooth'});
  toast(`📌 ${fresh[0].assigned_by_name||'主管'} 指派了 ${fresh.length} 項新任務：${fresh.slice(0,2).map(t=>itemText(t)).join('、')}${fresh.length>2?' …':''}`);
  ls.set(k,JSON.stringify([...new Set([...seen,...fresh.map(t=>t.id)])]));
 }
@@ -1395,7 +1448,7 @@ async function tdSave(){
  if(tdBusy||!tdUsable())return;
  const c=$('#tdC').value.trim(),t=$('#tdT').value.trim(),s=$('#tdS').value,e=$('#tdE').value,w=$('#tdW').checked;
  let p=$('#tdP').value.trim();p=p===''?null:Math.max(0,Math.min(100,Math.round(+p)));
- if(!c&&!t){toast('請填寫案號或內容');return}
+ if(!c&&!t){toast('請填寫「案號／工種／廠商別」或內容');return}
  if(!s||!e){toast('請選擇預計開始與結束日');return}
  if(e<s){toast('結束日不能早於開始日');return}
  const probe={start_date:s,end_date:e,weekends:w};
@@ -1532,7 +1585,7 @@ async function exportMonthly(){
   const s=`${y}-${pad(m)}-${pad(i)}`,w=isWork(s);
   const dd=await loadDay(s,map[s]||null),has=hasContent(dd);
   if(!w&&!has)continue;
-  if(w)work++;if(w&&has)done++;if(dd.f.leave)leaveDays+=dd.f.leave.part==='全天'?1:0.5;
+  if(w)work++;if(w&&has)done++;if(dd.f.leave)leaveDays+=leaveDayCount(dd.f.leave);
   const items=listItems(dd).map((r,j)=>`${j+1}. ${itemText(r)}${r.p!==''&&r.p!=null?`（${r.p}%）`:''}${(r.r||'').trim()?`　※${r.r.trim()}`:''}`);
   const sp=SPECIAL.filter(([k])=>secHas(dd.f,k)).map(([k,t])=>`【${t}】\n${secOut(dd.f,k)}`);
   rows.push({s,w,has,items,sp,future:s>ts});
@@ -1541,7 +1594,7 @@ async function exportMonthly(){
  [12,6,64,64].forEach((x,i)=>ws.getColumn(i+1).width=x);
  const F=(o={})=>Object.assign({name:'Microsoft JhengHei',size:11},o);
  ws.mergeCells('A1:D1');ws.getCell('A1').value='兆聯實業股份有限公司　工作月報表';ws.getCell('A1').font=F({size:16,bold:true});ws.getCell('A1').alignment={horizontal:'center'};
- ws.mergeCells('A2:D2');ws.getCell('A2').value=`部門：${nas.prof.dept}　　填表人：${nas.prof.emp} ${nas.prof.name}　　月份：${y} 年 ${m} 月　　上班日 ${work} 天・已填 ${done} 天${work-done?`・未填 ${work-done} 天`:''}${leaveDays?`・請假 ${leaveDays} 天`:''}`;
+ ws.mergeCells('A2:D2');ws.getCell('A2').value=`部門：${nas.prof.dept}　　填表人：${nas.prof.emp} ${nas.prof.name}　　月份：${y} 年 ${m} 月　　上班日 ${work} 天・已填 ${done} 天${work-done?`・未填 ${work-done} 天`:''}${leaveDays?`・請假 ${Math.round(leaveDays*100)/100} 天`:''}`;
  ws.getCell('A2').font=F();ws.getCell('A2').alignment={horizontal:'center'};
  const hr=ws.getRow(4);['日期','星期','工作記事','特殊事項'].forEach((t,i)=>{const c=hr.getCell(i+1);c.value=t;c.font=F({bold:true});c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFEFEFEF'}};c.alignment={horizontal:'center',vertical:'middle'}});
  const th={style:'thin',color:{argb:'FF000000'}},bd={top:th,left:th,bottom:th,right:th};

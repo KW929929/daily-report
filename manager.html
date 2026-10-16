@@ -53,7 +53,7 @@ dialog h3{margin:0 0 6px;font-size:16px}
 .asgp{display:flex;flex-wrap:wrap;gap:6px;max-height:160px;overflow:auto;border:1px solid var(--line);border-radius:8px;padding:8px}
 .asgp label{display:flex;align-items:center;gap:5px;border:1px solid var(--line);border-radius:14px;padding:2px 10px;font-size:13px;cursor:pointer;background:var(--bg)}
 .asgp label.on{background:var(--pri);border-color:var(--pri);color:#fff}.asgp input{display:none}
-.asgform{display:grid;gap:8px;grid-template-columns:150px 1fr 140px 140px 160px auto;align-items:end;margin-top:4px}
+.asgform{display:grid;gap:8px;grid-template-columns:200px 1fr 140px 140px 160px auto;align-items:end;margin-top:4px}
 .asgform label{display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--mute)}.asgform input{width:100%}
 .asgform .asgw{flex-direction:row;align-items:center;gap:6px;padding-bottom:6px;white-space:nowrap}.asgform .asgw input{width:auto}
 .asgform .asgnote{grid-column:1/-1}
@@ -131,8 +131,8 @@ table.mx td.c.bm::after{background:#d6336c;box-shadow:0 0 0 2px #ffd6e7}
     <div id="asgPeople" class="asgp"></div>
     <div class="note" style="margin-top:10px">② 任務內容</div>
     <div class="asgform">
-     <label>案號<input id="aC" placeholder="P000000000"></label>
-     <label>內容<input id="aT" placeholder="例：完成配管試壓、整理設備清冊"></label>
+     <label>案號／工種／廠商別<input id="aC" placeholder="例：P260800100　或　配管工程　或　XX機電"></label>
+     <label>內容<input id="aT" placeholder="例：完成配管試壓、整理設備清冊、報價比較表"></label>
      <label>預計開始<input id="aS" type="date"></label>
      <label>預計結束<input id="aE" type="date"></label>
      <label>完成時進度 %（選填）<input id="aP" type="number" min="0" max="100" placeholder="例：100"></label>
@@ -164,9 +164,12 @@ const toast=m=>{const t=$('#toast');t.textContent=m;t.classList.add('on');clearT
 const itemText=r=>{const c=(r.c||'').trim(),t=(r.t||'').trim();return c&&t?`${c}_${t}`:(c||t)};
 const hasItem=r=>!!itemText(r);
 /* 本日請假：f.leave = {type, part(全天/上午/下午), note} */
-const leaveText=f=>f&&f.leave?`本日請假（${f.leave.type}${f.leave.part&&f.leave.part!=='全天'?'・'+f.leave.part:''}）${f.leave.note&&f.leave.note.trim()?'　'+f.leave.note.trim():''}`:'';
-const leaveFull=f=>!!(f&&f.leave&&f.leave.part==='全天');
-const leaveShort=f=>f&&f.leave?`${f.leave.type}${f.leave.part&&f.leave.part!=='全天'?'('+f.leave.part+')':''}`:'';
+const leaveHours=l=>l.part==='全天'?8:l.part==='時數'?(+l.hours||0):4;           // 上午 / 下午 = 4 小時
+const leaveDesc=l=>l.part==='全天'?'':l.part==='時數'?`${+l.hours||0} 小時`:l.part;
+const leaveText=f=>f&&f.leave?`本日請假（${f.leave.type}${leaveDesc(f.leave)?'・'+leaveDesc(f.leave):''}）${f.leave.note&&f.leave.note.trim()?'　'+f.leave.note.trim():''}`:'';
+const leaveFull=f=>!!(f&&f.leave&&leaveHours(f.leave)>=8);                       // 全天，或請滿 8 小時
+const leaveDayCount=l=>Math.min(1,leaveHours(l)/8);                              // 換算成「天」
+const leaveShort=f=>f&&f.leave?`${f.leave.type}${f.leave.part==='全天'?'':f.leave.part==='時數'?`(${+f.leave.hours||0}h)`:`(${f.leave.part})`}`:'';
 /* 輸出用的工項清單：請假列在最前面，後面接有填的工項 */
 const listItems=dd=>(dd.f&&dd.f.leave?[{c:'',t:leaveText(dd.f),p:'',r:''}]:[]).concat((dd.today||[]).filter(hasItem));
 /* 舊資料（整串「P…_內容」存在 t）自動拆成案號 + 內容 */
@@ -345,7 +348,7 @@ function compute(){
    if(has){const h=otHours(r.f,d);ot+=h;
     const sp=SPECIAL_LIST.filter(([k])=>secHas(r.f||{},k)).map(x=>x[0]);                       // 當天「實際有填」的特殊事項
     const bm=((r.f&&r.f.budgets)||[]).some(b=>(tx(b.no)||b.t1||b.t2||tx(b.why))&&!(b.files&&b.files.length));  // 預算調整缺異常批註單
-    if(r.f&&r.f.leave){leave+=r.f.leave.part==='全天'?1:.5;if(w)done+= r.f.leave.part==='全天'?0:1;return{d,st:'leave',h,sp,bm}}
+    if(r.f&&r.f.leave){leave+=leaveDayCount(r.f.leave);if(w)done+=leaveFull(r.f)?0:1;return{d,st:'leave',h,sp,bm}}
     if(!w)return{d,st:'ot',h,sp,bm};
     done++;return{d,st:'done',h,sp,bm}}
    if(!w)return{d,st:'off',h:0};
@@ -387,7 +390,7 @@ function render(){
   const lv=lvOf(r.ot);
   return`<tr><td class="nm">${esc(r.p.name)}<small>${esc(r.p.emp)}</small></td>${r.cells.map(c=>{const has=c.sp&&c.sp.length,tip=has?' ・特殊事項：'+c.sp.map(k=>SPL[k]).join('、')+(c.bm?'（⚠ 預算調整缺異常批註單）':''):'';
      return`<td class="c st-${c.st}${has?' hasSp':''}${c.bm?' bm':''}" data-emp="${esc(r.p.emp)}" data-date="${c.d}" title="${c.d}${tip}">${SYM[c.st]}</td>`}).join('')}
-   <td class="sum">${r.done}</td><td class="sum ${r.late?'st-late':''}">${r.late+r.pend||''}</td><td class="sum">${r.leave||''}</td><td class="sum">${r.spDays?`<b style="color:#e8590c">${r.spDays}</b>`:''}</td><td class="sum lv${lv}"><b>${Math.round(r.ot*10)/10}</b></td></tr>`}).join('');
+   <td class="sum">${r.done}</td><td class="sum ${r.late?'st-late':''}">${r.late+r.pend||''}</td><td class="sum">${Math.round(r.leave*100)/100||''}</td><td class="sum">${r.spDays?`<b style="color:#e8590c">${r.spDays}</b>`:''}</td><td class="sum lv${lv}"><b>${Math.round(r.ot*10)/10}</b></td></tr>`}).join('');
  $('#mx').innerHTML=head+`<tbody>${body}</tbody>`;
  renderSpecial(L);
 }
@@ -461,7 +464,7 @@ $('#btnXls').onclick=async()=>{
  ws.addRow(['員編','姓名',...days.map(d=>`${+d.slice(5,7)}/${+d.slice(8)}`),'已填','缺','請假(天)','加班(小時)']);
  const FILL={done:'FFD9F2E3',leave:'FFE9DEFC',late:'FFFBD5D0',pend:'FFFFF0C9',ot:'FFDBE9FB',off:'FFEFEFEF'};
  rowsData.forEach(r=>{
-  const row=ws.addRow([r.p.emp,r.p.name,...r.cells.map(c=>SYM[c.st]),r.done,r.late+r.pend,r.leave||'',Math.round(r.ot*10)/10]);
+  const row=ws.addRow([r.p.emp,r.p.name,...r.cells.map(c=>SYM[c.st]),r.done,r.late+r.pend,Math.round(r.leave*100)/100||'',Math.round(r.ot*10)/10]);
   r.cells.forEach((c,i)=>{if(FILL[c.st])row.getCell(3+i).fill={type:'pattern',pattern:'solid',fgColor:{argb:FILL[c.st]}}});
  });
  ws.eachRow(row=>row.eachCell(c=>{c.border=bd;c.alignment={horizontal:'center',vertical:'middle'}}));
@@ -516,7 +519,7 @@ async function asgSave(){
  if(asgBusy)return;
  const c=$('#aC').value.trim(),t=$('#aT').value.trim(),s=$('#aS').value,e=$('#aE').value,w=$('#aW').checked,note=$('#aN').value.trim();
  let p=$('#aP').value.trim();p=p===''?null:Math.max(0,Math.min(100,Math.round(+p)));
- if(!c&&!t){$('#aMsg').textContent='請填寫案號或內容';return}
+ if(!c&&!t){$('#aMsg').textContent='請填寫「案號／工種／廠商別」或內容';return}
  if(!s||!e){$('#aMsg').textContent='請選擇預計開始與結束日';return}
  if(e<s){$('#aMsg').textContent='結束日不能早於開始日';return}
  if(!asgEdit&&!asgSel.size){$('#aMsg').textContent='請先選擇要指派的人';return}
