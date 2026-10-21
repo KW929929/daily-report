@@ -987,6 +987,7 @@ function buildSheet(wb,name,s){
 
 /* ---------- 客戶協定附件 / 異常批註單（存到雲端 Storage：附件 bucket） ---------- */
 const BUCKET='attachments';
+const ATT_WARN=10*1048576;   // 單檔超過 10 MB 時提醒；要改門檻只改這個數字
 const fmtSize=n=>n>=1048576?(n/1048576).toFixed(1)+' MB':Math.max(1,Math.round(n/1024))+' KB';
 function renderAtt(){
  const ul=$('#attList');if(!ul)return;
@@ -998,6 +999,7 @@ async function storeFiles(files,kind){
  const d=$('#date').value,saved=[];
  for(const f of files){
   if(f.size>50*1048576){toast(`${f.name} 超過 50 MB，未上傳`);continue}
+  if(f.size>ATT_WARN&&!confirm(`「${f.name}」大小為 ${fmtSize(f.size)}，超過 ${fmtSize(ATT_WARN)}。\n雲端空間有限，建議先壓縮（例如照片縮小、PDF 轉成較小檔案）再上傳。\n\n仍要上傳嗎？`)){toast(`已取消上傳：${f.name}`);continue}
   const ext=(f.name.match(/\.[A-Za-z0-9]{1,8}$/)||[''])[0].toLowerCase();
   const path=`${nas.prof.emp}/${d}/${kind}/${Date.now()}_${Math.random().toString(36).slice(2,7)}${ext}`;
   const{error}=await sb.storage.from(BUCKET).upload(path,f,{contentType:f.type||'application/octet-stream',upsert:false});
@@ -1010,7 +1012,7 @@ async function openStored(x){
  if(!x||!x.path){toast('找不到檔案：'+(x&&x.name||''));return}
  const w=window.open('','_blank');                      // 先開視窗，避免手機瀏覽器擋彈出視窗
  const{data:r,error}=await sb.storage.from(BUCKET).createSignedUrl(x.path,300);
- if(error||!r){if(w)w.close();toast('開啟失敗：'+(error?error.message:'找不到檔案'));return}
+ if(error||!r){if(w)w.close();toast(/not found|404/i.test(error&&error.message||'')?'此附件已超過雲端保存期限，已歸檔到公司 NAS，請向管理員索取':'開啟失敗：'+(error?error.message:'找不到檔案'));return}
  if(w)w.location=r.signedUrl;else location.href=r.signedUrl;
 }
 async function removeStored(x){

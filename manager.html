@@ -268,6 +268,8 @@ function otPeriod(d){
  let ey=sy,em=sm+1;if(em>12){em=1;ey++}
  return{start:`${sy}-${pad(sm)}-21`,end:`${ey}-${pad(em)}-20`,months:[[sy,sm],[ey,em]]};
 }
+function otCum(d,hmap){const p=otPeriod(d);let t=0;for(const k in hmap)if(k>=p.start&&k<=d)t+=hmap[k]||0;return t}   // 本期累計（截至 d 當日，含當日）
+const fmtOt=h=>`${Math.round(h*10)/10} 小時`;
 
 /* ===== 以上為共用邏輯 ===== */
 
@@ -430,7 +432,7 @@ document.addEventListener('click',e=>{
 async function openStored(x){
  if(!x||!x.path)return;const w=window.open('','_blank');
  const{data:r,error}=await sb.storage.from('attachments').createSignedUrl(x.path,300);
- if(error||!r){if(w)w.close();alert('開啟失敗：'+(error?error.message:''));return}
+ if(error||!r){if(w)w.close();alert(/not found|404/i.test(error&&error.message||'')?'此附件已超過雲端保存期限，已歸檔到公司 NAS（工程師日報資料夾的 _附件）':'開啟失敗：'+(error?error.message:''));return}
  if(w)w.location=r.signedUrl;else location.href=r.signedUrl;
 }
 let dlgFiles=[];
