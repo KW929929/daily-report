@@ -735,7 +735,7 @@ $('#btnXlsx').onclick=async()=>{
   const days=[],hmap={};
   for(let x=parseD(p.start);fmtD(x)<=p.end;x.setDate(x.getDate()+1)){
    const s=fmtD(x),dd=await loadDay(s,map[s]||null);
-   hmap[s]=otHours(dd.f,s);
+   if(map[s]||ls.get(key(s)))hmap[s]=otHours(dd.f,s);        // 只算「有紀錄」的日子（沒填的日子 loadDay 會補預設 08:30～17:30，假日會被誤算成 8 小時加班）
    if(hasContent(dd))days.push({s,dd});
   }
   if(!days.length){toast('這個週期（'+p.start+'～'+p.end+'）還沒有填寫內容');return}
