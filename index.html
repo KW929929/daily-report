@@ -221,7 +221,8 @@ dialog h3{margin:0 0 8px;font-size:16px}
  <div class="bar">
   <a id="mgrLink" href="manager.html" hidden style="text-decoration:none;border:1px solid var(--pri);color:var(--pri);border-radius:6px;padding:6px 12px">主管檢視</a>
   <button id="btnCopy">複製文字</button>
-  <button id="btnJson">匯出檔案</button>
+  <button id="btnXlsx" title="把目前這一天的日報存成 Excel（與公司日報表格式相同）">匯出 Excel</button>
+  <button id="btnJson" title="存成備份檔（JSON），之後可用「匯入」還原">備份檔</button>
   <button id="btnImport">匯入</button>
   <button class="pri" id="btnPrint">列印 / 存 PDF</button>
  </div>
@@ -724,6 +725,20 @@ $('#btnJson').onclick=()=>{
  const blob=new Blob([JSON.stringify({date:$('#date').value,dept:$('#dept').value,name:$('#name').value,...data},null,1)],{type:'application/json'});
  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`日報_${$('#name').value||'未填'}_${$('#date').value}.json`;a.click();URL.revokeObjectURL(a.href);
 };
+$('#btnXlsx').onclick=async()=>{
+ if(!nasReady()||!window.ExcelJS){toast('Excel 元件未載入');return}
+ try{
+  const d=$('#date').value;
+  for(const[y,m]of otPeriod(d).months)await loadMonthStatus(y,m);
+  otDay[d]=otHours(data.f,d);
+  const nx=(await nextItemsFor(d)).items;
+  const wb=new ExcelJS.Workbook();
+  buildSheet(wb,d.slice(5,7)+d.slice(8),{d,dept:$('#dept').value,emp:nas.prof.emp,name:$('#name').value,data,next:nx,ot:{day:otDay[d]||0,cum:otCum(d,otDay)}});
+  const buf=await wb.xlsx.writeBuffer(),fn=`日報表-${nas.prof.emp}-${safe(nas.prof.name)}-${d}.xlsx`;
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}));a.download=fn;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),10000);
+  toast('已下載：'+fn);
+ }catch(e){toast('匯出失敗：'+e.message)}
+};
 $('#btnImport').onclick=()=>$('#file').click();
 $('#file').onchange=async e=>{
  const f=e.target.files[0];if(!f)return;
@@ -850,7 +865,7 @@ async function applyConnection(){
  $('#dept').value=nas.prof?.dept||'';$('#emp').value=nas.prof?.emp||'';$('#name').value=nas.prof?.name||'';
  $('#form').classList.toggle('locked',!nas.prof);
  $('#mgrLink').hidden=!(nas.prof&&['manager','admin'].includes(nas.prof.role));
- ['btnCopy','btnJson','btnImport','btnPrint'].forEach(id=>$('#'+id).disabled=!nas.prof);
+ ['btnCopy','btnXlsx','btnJson','btnImport','btnPrint'].forEach(id=>$('#'+id).disabled=!nas.prof);
  nasBar();
  filled={};leaves={};loadedMonths.clear();for(const k in otDay)delete otDay[k];extraHol={};extraWork=new Set();
  if(nas.prof){
