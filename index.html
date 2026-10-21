@@ -221,7 +221,7 @@ dialog h3{margin:0 0 8px;font-size:16px}
  <div class="bar">
   <a id="mgrLink" href="manager.html" hidden style="text-decoration:none;border:1px solid var(--pri);color:var(--pri);border-radius:6px;padding:6px 12px">主管檢視</a>
   <button id="btnCopy">複製文字</button>
-  <button id="btnXlsx" title="把目前這一天的日報存成 Excel（與公司日報表格式相同）">匯出 Excel</button>
+  <button id="btnXlsx" title="把目前這個週期（21 日～次月 20 日）有填寫的日報存成 Excel，每天一個分頁（公司日報表格式）">匯出 Excel</button>
   <button id="btnJson" title="存成備份檔（JSON），之後可用「匯入」還原">備份檔</button>
   <button id="btnImport">匯入</button>
   <button class="pri" id="btnPrint">列印 / 存 PDF</button>
@@ -728,15 +728,25 @@ $('#btnJson').onclick=()=>{
 $('#btnXlsx').onclick=async()=>{
  if(!nasReady()||!window.ExcelJS){toast('Excel 元件未載入');return}
  try{
-  const d=$('#date').value;
-  for(const[y,m]of otPeriod(d).months)await loadMonthStatus(y,m);
-  otDay[d]=otHours(data.f,d);
-  const nx=(await nextItemsFor(d)).items;
+  toast('整理 Excel 中…');
+  const p=otPeriod($('#date').value);                          // 加班週期：21 日～次月 20 日
+  const e=parseD(p.end);e.setDate(e.getDate()+10);              // 多抓 10 天，才找得到期末那天的「下一個上班日」
+  const map=await nasRange(p.start,fmtD(e));
+  const days=[],hmap={};
+  for(let x=parseD(p.start);fmtD(x)<=p.end;x.setDate(x.getDate()+1)){
+   const s=fmtD(x),dd=await loadDay(s,map[s]||null);
+   hmap[s]=otHours(dd.f,s);
+   if(hasContent(dd))days.push({s,dd});
+  }
+  if(!days.length){toast('這個週期（'+p.start+'～'+p.end+'）還沒有填寫內容');return}
   const wb=new ExcelJS.Workbook();
-  buildSheet(wb,d.slice(5,7)+d.slice(8),{d,dept:$('#dept').value,emp:nas.prof.emp,name:$('#name').value,data,next:nx,ot:{day:otDay[d]||0,cum:otCum(d,otDay)}});
-  const buf=await wb.xlsx.writeBuffer(),fn=`日報表-${nas.prof.emp}-${safe(nas.prof.name)}-${d}.xlsx`;
+  for(const{s,dd}of days){
+   const nx=nextWorkday(s),nd=await loadDay(nx,map[nx]||null);
+   buildSheet(wb,s.slice(5,7)+s.slice(8),{d:s,dept:nas.prof.dept,emp:nas.prof.emp,name:nas.prof.name,data:dd,next:itemsOf(nd),ot:{day:hmap[s]||0,cum:otCum(s,hmap)}});
+  }
+  const buf=await wb.xlsx.writeBuffer(),fn=`日報表-${nas.prof.emp}-${safe(nas.prof.name)}-${p.start.slice(5).replace('-','')}至${p.end.slice(5).replace('-','')}.xlsx`;
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}));a.download=fn;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),10000);
-  toast('已下載：'+fn);
+  toast(`已下載：${fn}（${days.length} 天，每天一個分頁）`);
  }catch(e){toast('匯出失敗：'+e.message)}
 };
 $('#btnImport').onclick=()=>$('#file').click();
